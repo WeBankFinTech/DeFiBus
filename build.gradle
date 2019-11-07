@@ -33,7 +33,6 @@ buildscript {
 
 allprojects {
     apply plugin: 'java'
-    apply plugin: "com.github.kt3k.coveralls"
 
     clean.doFirst {
         delete 'build'
