@@ -33,6 +33,7 @@ buildscript {
 
 allprojects {
     apply plugin: 'java'
+    apply plugin: "coveralls"
 
     clean.doFirst {
         delete 'build'
