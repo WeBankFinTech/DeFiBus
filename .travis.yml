@@ -8,9 +8,8 @@ script:
 - travis_retry gradle check
 
 after_success:
-- gradle clean test
-- gradle jacoco:report
-- gradle coveralls:report -DrepoToken="${COVERALLS_TOKEN}"
+- gradle clean test org.jacoco:jacoco-maven-plugin:prepare-agent install org.jacoco:jacoco-maven-plugin:report
+- gradle org.eluder.coveralls:coveralls-maven-plugin:report -DrepoToken="${COVERALLS_TOKEN}"
 
 env:
   global:
