@@ -9,7 +9,7 @@ script:
 
 after_success:
 - gradle clean test
-- gradle jacoco:report
+- gradlew jacocoAllTestReport
 - gradle coveralls:report -DrepoToken="${COVERALLS_TOKEN}"
 
 env:
