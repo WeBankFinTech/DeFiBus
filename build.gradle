@@ -149,6 +149,9 @@ subprojects {
             xml.enabled = true // required by coveralls
         }
     }
+    coveralls{
+        jacocoReportPath="${buildDir}/reports/jacoco/jacocoAllTestReport/jacocoAllTestReport.xml"
+    }
 
 
     List junit = [
