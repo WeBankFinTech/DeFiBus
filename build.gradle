@@ -143,15 +143,13 @@ subprojects {
 
     task jacocoAllTestReport(type: JacocoReport, dependsOn: ["test"]) {
         sourceSets sourceSets.main
-        executionData files("$buildDir/jacoco/jacocoTest.exec")
+        executionData files("$buildDir/jacoco/test.exec")
         reports {
             html.enabled = true // human readable
             xml.enabled = true // required by coveralls
         }
     }
-    coveralls {
-        jacocoReportPath = "${buildDir}/reports/jacoco/jacocoRootReport/jacocoRootReport.xml"
-    }
+
 
     List junit = [
         "junit:junit:4.12"
