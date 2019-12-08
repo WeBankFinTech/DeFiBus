@@ -3,7 +3,7 @@ name: Java CI
 on:
   push:
     branches:    
-      - testactions
+      - test-actions
 
 jobs:
   build:
