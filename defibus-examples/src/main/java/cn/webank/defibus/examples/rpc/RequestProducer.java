@@ -54,14 +54,13 @@ public class RequestProducer {
             } else {
                 logger.info("request success. cost: {}ms. reply msg: {}", cost, reply);
             }
-        } catch (MQClientException e) {
+        } catch (MQClientException | RemotingException | InterruptedException | MQBrokerException e) {
             logger.warn("{}", e);
-        } catch (RemotingException e) {
+        } catch (Exception e) {
             logger.warn("{}", e);
-        } catch (InterruptedException e) {
-            logger.warn("{}", e);
-        } catch (MQBrokerException e) {
-            logger.warn("{}", e);
+        } finally {
+            // normally , we ONLY shutdown DeFiBusProducer when the application exits. In this sample, we shutdown the producer when message is sent.
+            deFiBusProducer.shutdown();
         }
     }
 }

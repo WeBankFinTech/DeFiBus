@@ -17,17 +17,19 @@
 
 package cn.webank.defibus.examples.simple;
 
-import cn.webank.defibus.client.common.DeFiBusClientConfig;
-import cn.webank.defibus.consumer.DeFiBusMessageListenerConcurrently;
-import cn.webank.defibus.consumer.DeFiBusPushConsumer;
-import cn.webank.defibus.producer.DeFiBusProducer;
 import java.util.List;
+
 import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
 import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import cn.webank.defibus.client.common.DeFiBusClientConfig;
+import cn.webank.defibus.consumer.DeFiBusMessageListenerConcurrently;
+import cn.webank.defibus.consumer.DeFiBusPushConsumer;
+import cn.webank.defibus.producer.DeFiBusProducer;
 
 public class SubConsumer {
     private static final Logger logger = LoggerFactory.getLogger(SubConsumer.class);
@@ -58,5 +60,14 @@ public class SubConsumer {
 
         deFiBusPushConsumer.subscribe(topic);
         deFiBusPushConsumer.start();
+
+        //shutdown the consumer when application exits.
+        Runtime.getRuntime().addShutdownHook(new Thread(){
+            @Override
+            public void run() {
+                deFiBusPushConsumer.shutdown();
+            }
+        });
+
     }
 }

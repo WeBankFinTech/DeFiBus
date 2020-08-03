@@ -22,7 +22,7 @@ public class DeFiBusVersion {
 
     public static String getVersionDesc(int value) {
         try {
-            DeFiBusVersion.Version v = DeFiBusVersion.Version.values()[value];
+            Version v = Version.values()[value];
             return v.name();
         } catch (Exception e) {
         }
@@ -30,8 +30,8 @@ public class DeFiBusVersion {
         return "HigherVersion";
     }
 
-    public static DeFiBusVersion.Version value2Version(int value) {
-        return DeFiBusVersion.Version.values()[value];
+    public static Version value2Version(int value) {
+        return Version.values()[value];
     }
 
     public enum Version {
