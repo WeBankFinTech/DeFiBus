@@ -189,7 +189,7 @@ public class DeFiTopicConfigManager extends ConfigManager {
     public String encode(final boolean prettyFormat) {
         //check consistency of TopicConfigManager and DeFiTopicConfigManager
         boolean isChanged = false;
-        for (Map.Entry<String, TopicConfig> entry : this.brokerController.getTopicConfigManager().getTopicConfigTable().entrySet()) {
+        for (Entry<String, TopicConfig> entry : this.brokerController.getTopicConfigManager().getTopicConfigTable().entrySet()) {
             String topic = entry.getKey();
             if (this.extTopicConfigTable.get(topic) == null) {
                 this.extTopicConfigTable.put(topic, new DeFiBusTopicConfig(topic));
