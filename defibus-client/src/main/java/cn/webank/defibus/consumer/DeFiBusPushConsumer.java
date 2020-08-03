@@ -36,7 +36,6 @@ import org.apache.rocketmq.client.impl.consumer.ProcessQueue;
 import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 import org.apache.rocketmq.common.message.MessageQueue;
-import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.RPCHook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +68,11 @@ public class DeFiBusPushConsumer {
         defaultMQPushConsumer.setVipChannelEnabled(false);
     }
 
+    /**
+     * start the consumer which will begin to connect with the broker and then message can be consumed.
+     * If the consumer has been already started, nothing will happen.
+     * @throws MQClientException
+     */
     public void start() throws MQClientException {
         if (isStart.compareAndSet(false, true)) {
 
@@ -129,10 +133,19 @@ public class DeFiBusPushConsumer {
         }
     }
 
+    /**
+     * register a message listener which specify the callback message how message should be consumed. The message will be consumed in a standalone thread pool.
+     * @param messageListener
+     */
     public void registerMessageListener(MessageListenerConcurrently messageListener) {
         this.defaultMQPushConsumer.registerMessageListener(messageListener);
     }
 
+    /**
+     * subscirbe a topic so that the consumer can consume message from. Typically, you should subscribe topic first then start the consumer
+     * @param topic topic name that the consumer needs to subscribe
+     * @throws MQClientException
+     */
     public void subscribe(String topic) throws MQClientException {
         this.defaultMQPushConsumer.subscribe(topic, "*");
         LOG.info("add subscription [{}] to consumer", topic);
