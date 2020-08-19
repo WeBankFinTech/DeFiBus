@@ -29,4 +29,4 @@ rem ============================================================================
 set "JAVA_OPT=%JAVA_OPT% -server -Xms1g -Xmx1g -Xmn256m -XX:PermSize=128m -XX:MaxPermSize=128m"
 set "JAVA_OPT=%JAVA_OPT% -Djava.ext.dirs="%BASE_DIR%\lib;%BASE_DIR%\apps";"%JAVA_HOME%\jre\lib\ext""
 set "JAVA_OPT=%JAVA_OPT% -cp "%CLASSPATH%""
-"%JAVA%" %JAVA_OPT% cn.webank.defibus.tools.command.DeFiBusAdminStartup %*
+"%JAVA%" %JAVA_OPT% com.webank.defibus.tools.command.DeFiBusAdminStartup %*
