@@ -77,7 +77,7 @@ JAVA_OPT="${JAVA_OPT} -Djava.ext.dirs=${BASE_DIR}/lib:${BASE_DIR}/apps"
 JAVA_OPT="${JAVA_OPT} -cp ${CLASSPATH}"
 JAVA_OPT="${JAVA_OPT} -Djava.security.egd=file:/dev/./urandom"
 
-nohup $JAVA ${JAVA_OPT} cn.webank.defibus.namesrv.DeFiBusNamesrvStartup -c ../conf/namesrv.properties 2>&1 >/dev/null &
+nohup $JAVA ${JAVA_OPT} com.webank.defibus.namesrv.DeFiBusNamesrvStartup -c ../conf/namesrv.properties 2>&1 >/dev/null &
 
 echo "Now Add crontab...."
 crontab -l | grep -v namesrv_watchdog > tmp_crontab.txt
