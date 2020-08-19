@@ -25,7 +25,7 @@ echo "Finish...."
 case $1 in
     broker)
 
-    pid=`ps ax | grep -i 'cn.webank.defibus.broker.DeFiBusBrokerStartup' |grep java | grep -v grep | awk '{print $1}'`
+    pid=`ps ax | grep -i 'com.webank.defibus.broker.DeFiBusBrokerStartup' |grep java | grep -v grep | awk '{print $1}'`
     if [ -z "$pid" ] ; then
             echo "No DeFiBusBroker running."
             exit -1;
@@ -50,7 +50,7 @@ case $1 in
     ;;
     namesrv)
 
-    pid=`ps ax | grep -i 'cn.webank.defibus.namesrv.DeFiBusNameSrvStartup' |grep java | grep -v grep | awk '{print $1}'`
+    pid=`ps ax | grep -i 'com.webank.defibus.namesrv.DeFiBusNameSrvStartup' |grep java | grep -v grep | awk '{print $1}'`
     if [ -z "$pid" ] ; then
             echo "No DeFiBusNameSrv running."
             exit -1;
