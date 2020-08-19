@@ -79,7 +79,7 @@ subprojects {
     apply plugin: "idea"
     apply plugin: "project-reports"
     apply plugin: "jacoco"
-    apply plugin: "checkstyle"
+//    apply plugin: "checkstyle"
     apply plugin: "pmd"
     apply plugin: 'com.github.spotbugs'
 
@@ -103,20 +103,20 @@ subprojects {
         }
     }
 
-    checkstyle {
-        toolVersion = "8.32"
-        ignoreFailures = true
-        sourceSets = [sourceSets.main]
-        configFile = 'conf/checkstyle.xml' as File
-        showViolations true
-    }
-
-    tasks.withType(Checkstyle) {
-        reports {
-            xml.enabled false
-            html.enabled true
-        }
-    }
+//    checkstyle {
+//        toolVersion = "8.32"
+//        ignoreFailures = true
+//        sourceSets = [sourceSets.main]
+//        configFile = 'conf/checkstyle.xml' as File
+//        showViolations true
+//    }
+//
+//    tasks.withType(Checkstyle) {
+//        reports {
+//            xml.enabled false
+//            html.enabled true
+//        }
+//    }
 
     spotbugs {
         toolVersion = '4.0.2'
@@ -178,11 +178,11 @@ subprojects {
     ]
 
     List logback = [
-            "org.slf4j:slf4j-api:1.7.25"
+            "org.slf4j:slf4j-api:1.7.30"
     ]
 
     List guava = [
-            "com.google.guava:guava:20.0"
+            "com.google.guava:guava:29.0-jre"
     ]
 
     List fastjson = [
@@ -300,15 +300,14 @@ subprojects {
     uploadArchives {
         repositories {
             mavenDeployer {
-                snapshotRepository(url: 'file://D:\\LocalRepo') {
+                snapshotRepository(url: 'Your target repo address') {
                     authentication(userName: 'Your user name', password: 'Your password')
                 }
-                repository(url: 'file://D:\\LocalRepo') {
+                repository(url: 'Your target repo address') {
                     authentication(userName: 'deployment', password: 'deployment123')
                 }
             }
         }
     }
-
 }
 
