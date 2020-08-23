@@ -30,7 +30,7 @@ set "JAVA_OPT=%JAVA_OPT% -XX:-OmitStackTraceInFastThrow"
 set "JAVA_OPT=%JAVA_OPT% -XX:-UseLargePages"
 set "JAVA_OPT=%JAVA_OPT% -Djava.ext.dirs=%BASE_DIR%lib;%BASE_DIR%apps"
 set "JAVA_OPT=%JAVA_OPT% -cp "%CLASSPATH%""
-"%JAVA%" %JAVA_OPT% cn.webank.defibus.broker.DeFiBusBrokerStartup %*
+"%JAVA%" %JAVA_OPT% com.webank.defibus.broker.DeFiBusBrokerStartup %*
 
 IF %ERRORLEVEL% EQU 0 (
    ECHO "DeFiBusBroker starts OK"
