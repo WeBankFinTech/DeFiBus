@@ -54,7 +54,7 @@ JAVA_OPT="${JAVA_OPT} -Djava.security.egd=file:/dev/./urandom"
 
 
 APP_HOME=../.
-APP_MAIN=cn.webank.defibus.tools.command.DeFiBusAdminStartup
+APP_MAIN=com.webank.defibus.tools.command.DeFiBusAdminStartup
 CLASSPATH=$APP_HOME/lib:$APP_HOME/apps:$APP_HOME/conf
 ARGS="$@"
 

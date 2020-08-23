@@ -31,7 +31,7 @@ function is_java8 {
 #0(not running),  1(is running)
 function is_brokerRunning {
         local _pid="$1"
-        local pid=`ps ax | grep -i 'cn.webank.defibus.broker.DeFiBusBrokerStartup' |grep java | grep -v grep | awk '{print $1}'|grep $_pid`
+        local pid=`ps ax | grep -i 'com.webank.defibus.broker.DeFiBusBrokerStartup' |grep java | grep -v grep | awk '{print $1}'|grep $_pid`
         if [ -z "$pid" ] ; then
             return 0
         else
@@ -101,5 +101,5 @@ if [ -f "pid.file" ]; then
 fi
 
 
-nohup $JAVA ${JAVA_OPT} cn.webank.defibus.broker.DeFiBusBrokerStartup -c ../conf/broker.properties 2>&1 >/dev/null &
+nohup $JAVA ${JAVA_OPT} com.webank.defibus.broker.DeFiBusBrokerStartup -c ../conf/broker.properties 2>&1 >/dev/null &
 echo $!>pid.file
