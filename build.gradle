@@ -64,7 +64,7 @@ task tar(type: Tar) {
 
 task zip(type: Zip) {
     extension = 'zip'
-    archiveName = project.name + '.' + project.version + '.' + extension
+    archiveName = project.name + '_' + project.version + '.' + extension
     destinationDir = new File(projectDir, 'build')
     into('/') {
         from 'dist'
