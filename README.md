@@ -1,5 +1,5 @@
 ## DeFiBus(Decentralized Financial Message Bus) -- 分布式金融级消息总线
-[![Build Status](https://www.travis-ci.org/WeBankFinTech/DeFiBus.svg?branch=master)](https://www.travis-ci.org/WeBankFinTech/DeFiBus) [![Coverage Status](https://coveralls.io/repos/github/WeBankFinTech/DeFiBus/badge.svg?branch=test)](https://coveralls.io/github/WeBankFinTech/DeFiBus?branch=test)
+[![Build Status](https://www.travis-ci.org/WeBankFinTech/DeFiBus.svg?branch=master)](https://www.travis-ci.org/WeBankFinTech/DeFiBus) [![Coverage Status](https://coveralls.io/repos/github/WeBankFinTech/DeFiBus/badge.svg?branch=master)](https://coveralls.io/github/WeBankFinTech/DeFiBus?branch=master)
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 **DeFiBus=RPC+MQ，是基于开源消息中间件打造的安全可控的分布式金融级消息总线。DeFiBus不仅提供了RPC同步调用，还提供了MQ的异步事件通知、事件组播和广播等常用服务调用和消息模式，同时增加了应用多中心多活、服务就近、灰度发布等分布式场景下的高可用能力。在对于机器故障的容错能力方面的增强，也让消息总线的服务更加稳定可靠，为业务提供7x24的服务。**
@@ -19,11 +19,17 @@ DeFiBus主要包括以下几个组件（模块）：
 
 * **NameServer**：NameServer提供Topic的发现和路由，每一个NameServer接受Broker上报的Topic信息，并维护Topic的路由信息供客户端查询。  
 
+* **Sync**：NameServer的数据一致性服务，全局唯一。 
+
 * **GSL**：全局服务定位（Global Service Location）服务提供服务级别的路由发现。服务可以部署在不同的区域（比如不同的数据中心、逻辑分区等），服务请求方在请求某一个具体服务时，无需关注服务部署的区域，GSL能够根据服务发现规则自动定位到具体的服务，将服务信息返回给客户端。  
 
 * **SGS**：服务治理系统（Service Government System）负责全局的服务管理，包括服务的申请、服务部署规划、服务下线等服务全生命周期的管理。在DeFiBus中，服务与Topic一一对应，Topic的名称由对应的服务按照一定的规则来命名。Topic的创建、更新和删除由SGS统一管理。SGS在服务的部署区域对应的Broker集群中创建Topic之后，将更新全局服务路由数据，供GSL定位服务使用。
 
 * **Proxy**：服务代理（Proxy）提供TCP/HTTP接入方式，同时允许按照协议规范开发的C、GO、Python等其他语言客户端的接入。
+
+* **ConfigCenter**：配置中心，提供HTTP接入方式，比如Namesrv的寻址以及其他配置。
+
+* **ACL**：访问控制服务，TOPIC级别的IP访问控制，提供黑白名单功能。
 
 ### 服务和Topic的定义
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -63,12 +69,12 @@ DeFiBus is licensed under [Apache License](https://github.com/WeBankFinTech/DeFi
 * [RocketMQ](https://github.com/apache/rocketmq)
 * [Netty](https://github.com/netty/netty)
 
+## 动态
+在[ Wiki ](https://github.com/WeBankFinTech/DeFiBus/wiki)上汇总了相关动态和资讯，[点此处前往查看](https://github.com/WeBankFinTech/DeFiBus/wiki)
+
 ## Contacts
 微信/QQ群：
 
 ![wechat_qr](./docs/images/wechat_helper.png)
 
-![qqgroup_qr](./docs/images/qqgroup-crcode.png)
-
-钉钉群: 23372793
 
