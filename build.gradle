@@ -163,8 +163,6 @@ subprojects {
         ignoreFailures = true
     }
 
-
-
     List junit = [
             "junit:junit:4.12"
     ]
