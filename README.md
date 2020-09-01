@@ -15,7 +15,7 @@
   
 DeFiBus主要包括以下几个组件（模块）：  
 
-* **Broker**：通过轻量的Topic和Queue机制提供消息存储功能。Broker定期将Topic信息上报到NameServer中，同集群中的Broker实例上报的NameServer必须保持一致，避免路由信息不一致。  
+* **Broker**：通过轻量级的Topic和Queue机制提供消息存储功能。Broker定期将Topic信息上报到NameServer中，同集群中的Broker实例上报的NameServer必须保持一致，避免路由信息不一致。  
 
 * **NameServer**：NameServer提供Topic的发现和路由，每一个NameServer接受Broker上报的Topic信息，并维护Topic的路由信息供客户端查询。  
 
