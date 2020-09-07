@@ -25,7 +25,7 @@ DeFiBus主要包括以下几个组件（模块）：
 
 * **SGS**：服务治理系统（Service Government System）负责全局的服务管理，包括服务的申请、服务部署规划、服务下线等服务全生命周期的管理。在DeFiBus中，服务与Topic一一对应，Topic的名称由对应的服务按照一定的规则来命名。Topic的创建、更新和删除由SGS统一管理。SGS在服务的部署区域对应的Broker集群中创建Topic之后，将更新全局服务路由数据，供GSL定位服务使用。
 
-* **Proxy**：服务代理（Proxy）提供TCP/HTTP接入方式，同时允许按照协议规范开发的C、GO、Python等其他语言客户端的接入。
+* **Proxy**：服务代理（[EventMesh](https://github.com/WeBankFinTech/EventMesh) ）提供TCP/HTTP接入方式，同时允许按照协议规范开发的C、GO、Python等其他语言客户端的接入。
 
 * **ConfigCenter**：配置中心，提供HTTP接入方式，比如Namesrv的寻址以及其他配置。
 
@@ -52,7 +52,7 @@ Topic按照如下格式来命名：
 * [动态扩缩队列 ：自适应应用实例数量，动态调整队列个数](docs/cn/features/6-dynamic-adjust-queue.md)
 * [容错机制：故障和错误隔离](docs/cn/features/8-fault-tolerant.md)
 * 服务路由和定位：动态路由及定位(后续开源)
-* 服务代理：TCP/HTTP及多语言的代理(后续开源)
+* 服务代理：TCP/HTTP及多语言的代理([EventMesh](https://github.com/WeBankFinTech/EventMesh))
 * 服务治理：服务元数据的管理(后续开源)
 * 平滑升级：平滑升级、平滑扩容(后续开源)
 
