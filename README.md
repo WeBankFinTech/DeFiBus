@@ -7,6 +7,9 @@
 ### 分布式架构
 ![architecture1](./docs/images/dist-arch.png)
 
+名词解释
+DCN：Data Center Node（数据中心节点）
+
 ### 系统架构
 ![architecture2](./docs/images/defibus-arch.png)
   
@@ -18,23 +21,14 @@ DeFiBus主要包括以下几个组件（模块）：
 
 * **GSL**：全局服务定位（Global Service Location）服务提供服务级别的路由发现。服务可以部署在不同的区域（比如不同的数据中心、逻辑分区等），服务请求方在请求某一个具体服务时，无需关注服务部署的区域，GSL能够根据服务发现规则自动定位到具体的服务，将服务信息返回给客户端。  
 
-* **SGS**：服务治理系统（Service Government System）负责全局的服务管理，包括服务的申请、服务部署规划、服务下线等服务全生命周期的管理。在DeFiBus中，服务与Topic一一对应，Topic的名称由对应的服务按照一定的规则来命名。Topic的创建、更新和删除由SGS统一管理。SGS在服务的部署区域对应的Broker集群中创建Topic之后，将更新全局服务路由数据，供GSL定位服务使用。
-
 * **[EventMesh](https://github.com/WeBankFinTech/EventMesh)**：服务代理提供TCP/HTTP接入方式，同时允许按照协议规范开发的C、GO、Python等其他语言客户端的接入。
 
-* **ConfigCenter**：配置中心，提供HTTP接入方式，比如Namesrv的寻址以及其他配置。
+* **ConfigCenter（CC）**：配置中心，提供HTTP接入方式，比如Namesrv的寻址以及其他配置。
 
 * **ACL**：访问控制服务，TOPIC级别的IP访问控制，提供黑白名单功能。
 
-### 服务和Topic的定义
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-DeFiBus把服务和Topic做了一一对应，每个服务必须对应一个Topic。Topic根据服务的唯一ID和服务的部署区域来命名。每个服务需要有服务的唯一标识，可以用数字ID或者字符串来表示。每个部署区域使用3位长度的字符串（限数字和字母构成）表示。  
-Topic按照如下格式来命名：
-```
-[区域代码]-[服务唯一ID]
-```
+* **SGS**：服务治理系统（Service Government System），用于管理服务、服务请求、服务响应、服务路由、ACL等流程和数据。
 
-比如，余额查询服务的服务ID为20190001，部署在“A10”这个区域，那么该服务在A10区域的Topic就命名为“A10-20190001”。
 
 ### 特性列表:
 * [RPC调用：即“Request-Reply”模式，支持系统间的同步调用](docs/cn/features/1-request-response-call.md)
