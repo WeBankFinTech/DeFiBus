@@ -4,10 +4,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 **DeFiBus=RPC+MQ，是基于开源消息中间件打造的安全可控的分布式金融级消息总线。DeFiBus不仅提供了RPC同步调用，还提供了MQ的异步事件通知、事件组播和广播等常用服务调用和消息模式，同时增加了应用多中心多活、服务就近、灰度发布等分布式场景下的高可用能力。在对于机器故障的容错能力方面的增强，也让消息总线的服务更加稳定可靠，为业务提供7x24的服务。**
 
-### 分布式架构  
-<div align=center>
+### 分布式架构
 ![architecture1](./docs/images/dist-arch.png)
-</div>
 
 ### 系统架构
 ![architecture2](./docs/images/defibus-arch.png)
@@ -22,7 +20,7 @@ DeFiBus主要包括以下几个组件（模块）：
 
 * **SGS**：服务治理系统（Service Government System）负责全局的服务管理，包括服务的申请、服务部署规划、服务下线等服务全生命周期的管理。在DeFiBus中，服务与Topic一一对应，Topic的名称由对应的服务按照一定的规则来命名。Topic的创建、更新和删除由SGS统一管理。SGS在服务的部署区域对应的Broker集群中创建Topic之后，将更新全局服务路由数据，供GSL定位服务使用。
 
-* **EventMesh**：服务代理（[EventMesh](https://github.com/WeBankFinTech/EventMesh) ）提供TCP/HTTP接入方式，同时允许按照协议规范开发的C、GO、Python等其他语言客户端的接入。
+* **[EventMesh](https://github.com/WeBankFinTech/EventMesh)**：服务代理提供TCP/HTTP接入方式，同时允许按照协议规范开发的C、GO、Python等其他语言客户端的接入。
 
 * **ConfigCenter**：配置中心，提供HTTP接入方式，比如Namesrv的寻址以及其他配置。
 
