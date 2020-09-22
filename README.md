@@ -7,11 +7,11 @@
 ### 整体架构  
 <div align=center>
 
-![architecture1](./docs/images/features/a-distributing-architecture-in-financial.png)
+![architecture1](./docs/images/dist-arch.png)
 
 </div>
 
-![architecture2](./docs/images/features/architecture-p1.png)
+![architecture2](./docs/images/defibus-arch.png)
   
 DeFiBus主要包括以下几个组件（模块）：  
 
@@ -51,10 +51,10 @@ Topic按照如下格式来命名：
 * [应用多活：应用多中心多活](docs/cn/features/5-multi-active.md)
 * [动态扩缩队列 ：自适应应用实例数量，动态调整队列个数](docs/cn/features/6-dynamic-adjust-queue.md)
 * [容错机制：故障和错误隔离](docs/cn/features/8-fault-tolerant.md)
-* 服务路由和定位：动态路由及定位(后续开源)
-* 服务代理：TCP/HTTP及多语言的代理([EventMesh](https://github.com/WeBankFinTech/EventMesh))
-* 服务治理：服务元数据的管理(后续开源)
-* 平滑升级：平滑升级、平滑扩容(后续开源)
+* [服务代理：云原生多语言的代理EventMesh](https://github.com/WeBankFinTech/EventMesh)
+* 服务治理：服务元数据的管理(待开源)
+* 服务路由和定位：动态路由及定位(待开源)
+* 平滑升级：平滑升级、平滑扩容(待开源)
 
 
 
