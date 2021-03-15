@@ -8,7 +8,7 @@
 ![architecture1](./docs/images/dist-arch.png)
 
 名词解释
-DCN：Data Center Node（数据中心节点）
+DCN：Data Center Node（数据中心单元化节点）
 
 ### 系统架构
 ![architecture2](./docs/images/defibus-arch.png)
