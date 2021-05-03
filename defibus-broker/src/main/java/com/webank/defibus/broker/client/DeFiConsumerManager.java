@@ -18,12 +18,7 @@
 package com.webank.defibus.broker.client;
 
 import com.webank.defibus.common.util.ReflectUtil;
-import io.netty.channel.Channel;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+
 import org.apache.rocketmq.broker.client.ClientChannelInfo;
 import org.apache.rocketmq.broker.client.ConsumerGroupEvent;
 import org.apache.rocketmq.broker.client.ConsumerGroupInfo;
@@ -39,6 +34,14 @@ import org.apache.rocketmq.remoting.common.RemotingUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import io.netty.channel.Channel;
+
 public class DeFiConsumerManager extends ConsumerManager {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private static final long CHANNEL_EXPIRED_TIMEOUT = 1000 * 120;
@@ -47,6 +50,7 @@ public class DeFiConsumerManager extends ConsumerManager {
     private final ConsumerIdsChangeListener consumerIdsChangeListener;
     private final AdjustQueueNumStrategy adjustQueueNumStrategy;
 
+    @SuppressWarnings("unchecked")
     public DeFiConsumerManager(final ConsumerIdsChangeListener consumerIdsChangeListener,
         final AdjustQueueNumStrategy strategy) {
         super(consumerIdsChangeListener);
