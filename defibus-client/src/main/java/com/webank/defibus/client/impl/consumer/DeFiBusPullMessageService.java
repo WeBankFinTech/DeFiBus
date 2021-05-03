@@ -19,12 +19,7 @@ package com.webank.defibus.client.impl.consumer;
 
 import com.webank.defibus.client.impl.factory.DeFiBusClientInstance;
 import com.webank.defibus.common.util.ReflectUtil;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+
 import org.apache.rocketmq.client.impl.consumer.DefaultMQPushConsumerImpl;
 import org.apache.rocketmq.client.impl.consumer.MQConsumerInner;
 import org.apache.rocketmq.client.impl.consumer.PullMessageService;
@@ -32,6 +27,13 @@ import org.apache.rocketmq.client.impl.consumer.PullRequest;
 import org.apache.rocketmq.client.log.ClientLogger;
 import org.apache.rocketmq.common.utils.ThreadUtils;
 import org.apache.rocketmq.logging.InternalLogger;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 public class DeFiBusPullMessageService extends PullMessageService {
     private final InternalLogger log = ClientLogger.getLog();
@@ -47,6 +49,7 @@ public class DeFiBusPullMessageService extends PullMessageService {
             }
         });
 
+    @SuppressWarnings("unchecked")
     public DeFiBusPullMessageService(DeFiBusClientInstance deFiBusClientInstance) {
         super(deFiBusClientInstance);
         this.mQClientFactory = deFiBusClientInstance;
