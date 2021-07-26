@@ -139,4 +139,8 @@ public class DeFiConsumerGroupInfo extends ConsumerGroupInfo {
         }
         return new HashSet<>();
     }
+
+    public ConcurrentHashMap<String, CopyOnWriteArraySet<String>> getClientIdMap() {
+        return clientIdMap;
+    }
 }
