@@ -168,11 +168,11 @@ public class DeFiBusBrokerStartup extends BrokerStartup {
 
             messageStoreConfig.setHaListenPort(nettyServerConfig.getListenPort() + 1);
 
-            LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
-            JoranConfigurator configurator = new JoranConfigurator();
-            configurator.setContext(lc);
-            lc.reset();
-            configurator.doConfigure(brokerConfig.getRocketmqHome() + "/conf/logback_broker.xml");
+//            LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
+//            JoranConfigurator configurator = new JoranConfigurator();
+//            configurator.setContext(lc);
+//            lc.reset();
+//            configurator.doConfigure(brokerConfig.getRocketmqHome() + "/conf/logback_broker.xml");
             log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
 
             MixAll.printObjectProperties(log, brokerConfig);

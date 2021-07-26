@@ -17,18 +17,32 @@
 
 package com.webank.defibus.broker.client;
 
+import com.webank.defibus.broker.DeFiBrokerController;
+import com.webank.defibus.common.DeFiBusBrokerConfig;
 import com.webank.defibus.common.util.ReflectUtil;
 import io.netty.channel.Channel;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.apache.rocketmq.broker.client.ClientChannelInfo;
 import org.apache.rocketmq.broker.client.ConsumerGroupEvent;
 import org.apache.rocketmq.broker.client.ConsumerGroupInfo;
 import org.apache.rocketmq.broker.client.ConsumerIdsChangeListener;
 import org.apache.rocketmq.broker.client.ConsumerManager;
+import org.apache.rocketmq.common.ThreadFactoryImpl;
+import org.apache.rocketmq.common.TopicConfig;
 import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 import org.apache.rocketmq.common.protocol.heartbeat.ConsumeType;
@@ -46,12 +60,22 @@ public class DeFiConsumerManager extends ConsumerManager {
         new ConcurrentHashMap<String, ConsumerGroupInfo>(1024);
     private final ConsumerIdsChangeListener consumerIdsChangeListener;
     private final AdjustQueueNumStrategy adjustQueueNumStrategy;
+    private final ExecutorService notifyClientExecutor;
+    private final BlockingQueue<Runnable> notifyClientThreadPoolQueue;
 
     public DeFiConsumerManager(final ConsumerIdsChangeListener consumerIdsChangeListener,
-        final AdjustQueueNumStrategy strategy) {
+        final AdjustQueueNumStrategy strategy, DeFiBusBrokerConfig deFiBusBrokerConfig) {
         super(consumerIdsChangeListener);
         this.consumerIdsChangeListener = consumerIdsChangeListener;
         this.adjustQueueNumStrategy = strategy;
+        this.notifyClientThreadPoolQueue = new LinkedBlockingQueue<Runnable>(deFiBusBrokerConfig.getNotifyClientThreadPoolQueueCapacity());
+        this.notifyClientExecutor = new ThreadPoolExecutor(
+            deFiBusBrokerConfig.getNotifyClientThreadPoolNums(),
+            deFiBusBrokerConfig.getNotifyClientThreadPoolNums(),
+            1000 * 60,
+            TimeUnit.MILLISECONDS,
+            this.notifyClientThreadPoolQueue,
+            new ThreadFactoryImpl("notifyClientThread_"));
 
         try {
             this.consumerTable = (ConcurrentHashMap<String, ConsumerGroupInfo>) ReflectUtil.getSimpleProperty(ConsumerManager.class, this, "consumerTable");
@@ -79,7 +103,8 @@ public class DeFiConsumerManager extends ConsumerManager {
         if (r1 || r2) {
             adjustQueueNum(oldSub, subList);
             if (isNotifyConsumerIdsChangedEnable) {
-                this.consumerIdsChangeListener.handle(ConsumerGroupEvent.CHANGE, group, consumerGroupInfo.getAllChannel());
+//                this.consumerIdsChangeListener.handle(ConsumerGroupEvent.CHANGE, group, consumerGroupInfo.getAllChannel());
+                asyncNotifyClientChange(group, deFiConsumerGroupInfo);
             }
         }
 
@@ -112,18 +137,30 @@ public class DeFiConsumerManager extends ConsumerManager {
         while (it.hasNext()) {
             Map.Entry<String, ConsumerGroupInfo> next = it.next();
             ConsumerGroupInfo info = next.getValue();
+            String group = next.getKey();
+            DeFiConsumerGroupInfo deFiConsumerGroupInfo = (DeFiConsumerGroupInfo) info;
             if (info.getChannelInfoTable().get(channel) != null) {
                 ClientChannelInfo clientChannelInfo = info.getChannelInfoTable().get(channel);
-                DeFiConsumerGroupInfo deFiConsumerGroupInfo = (DeFiConsumerGroupInfo) info;
-                subscribeTopics = deFiConsumerGroupInfo.findSubscribedTopicByClientId(clientChannelInfo.getClientId());
+                //移除clientId
+                subscribeTopics = deFiConsumerGroupInfo.unregisterClientId(clientChannelInfo);
+                //缩Q
+                if (subscribeTopics != null) {
+                    for (String topic : subscribeTopics) {
+                        adjustQueueNumStrategy.decreaseQueueNum(topic);
+                    }
+                }
+                //移除channel
+                boolean removed = info.doChannelCloseEvent(remoteAddr, channel);
+                if (removed && info.getChannelInfoTable().isEmpty()) {
+                    ConsumerGroupInfo remove = this.consumerTable.remove(group);
+                    if (remove != null) {
+                        log.info("unregister consumer ok, no connection in this group,remove consumer group from consumerTable, {}",
+                            group);
+                    }
+                }
             }
-        }
-        super.doChannelCloseEvent(remoteAddr, channel);
-
-        if (subscribeTopics != null) {
-            for (String topic : subscribeTopics) {
-                adjustQueueNumStrategy.decreaseQueueNum(topic);
-            }
+            //异步通知clientId变化
+            asyncNotifyClientChange(group, deFiConsumerGroupInfo);
         }
     }
 
@@ -154,6 +191,8 @@ public class DeFiConsumerManager extends ConsumerManager {
                             adjustQueueNumStrategy.decreaseQueueNum(topic);
                         }
                     }
+                    //异步通知clientId变化
+                    asyncNotifyClientChange(group, consumerGroupInfo);
                 }
             }
 
@@ -165,6 +204,52 @@ public class DeFiConsumerManager extends ConsumerManager {
             }
         }
     }
+
+    private void asyncNotifyClientChange(final String group, DeFiConsumerGroupInfo deFiConsumerGroupInfo) {
+        try {
+//            String dedupKey = dedupKeyPrefixForNotifyClientChange + group;
+//            String old = dedupMap.putIfAbsent(dedupKey, group);
+//            if (StringUtils.isNotBlank(old)) {
+//                return;
+//            }
+            //如果 dedupMap 中存在该group, 则表明存在 还未被执行的通知，可忽略本次
+            //如果 dedupMap 中不存在该group, 则表明要么存在正在执行的通知, 要么不存在即将被执行的通知, 需要将本次排队
+            this.notifyClientExecutor.execute(() -> {
+                try {
+//                    dedupMap.remove(dedupKey);
+                    if (deFiConsumerGroupInfo == null) {
+                        return;
+                    }
+                    consumerIdsChangeListener.handle(ConsumerGroupEvent.CHANGE, group, deFiConsumerGroupInfo.getAllChannel());
+                } catch (Exception ex) {
+                }
+            });
+        } catch (RejectedExecutionException re) {
+            log.info("async notify client discard, group: {}", group);
+        }
+    }
+
+    //    public List<Channel> getNotifyClientChannel(DeFiConsumerGroupInfo DeFiConsumerGroupInfo) {
+//        long startTime = System.currentTimeMillis();
+//        List<Channel> result = new ArrayList<>();
+//        Set<String> notifyClientId = new HashSet<>();
+//        Iterator<Map.Entry<SubscriptionDataKey, CopyOnWriteArraySet<String>>> it = DeFiConsumerGroupInfo.getClientIdMap().entrySet().iterator();
+//        while (it.hasNext()) {
+//            Map.Entry<SubscriptionDataKey, CopyOnWriteArraySet<String>> entry = it.next();
+//            TopicConfig topicConfig = this.DeFiBrokerController.getTopicConfigManager().selectTopicConfig(entry.getKey().getTopic());
+//            if (topicConfig != null) {
+//                notifyClientId.addAll(entry.getValue());
+//            }
+//        }
+//        Iterator<Map.Entry<Channel, ClientChannelInfo>> channelInfoIter = DeFiConsumerGroupInfo.getChannelInfoTable().entrySet().iterator();
+//        while (channelInfoIter.hasNext()) {
+//            Map.Entry<Channel, ClientChannelInfo> entry = channelInfoIter.next();
+//            if (entry.getValue() != null && notifyClientId.contains(entry.getValue().getClientId())) {
+//                result.add(entry.getKey());
+//            }
+//        }
+//    }
+
 
     private void adjustQueueNum(final Set<String> oldSub, final Set<SubscriptionData> subList) {
         for (SubscriptionData subscriptionData : subList) {
@@ -194,5 +279,13 @@ public class DeFiConsumerManager extends ConsumerManager {
 
     public ConcurrentHashMap<String, ConsumerGroupInfo> getConsumerTable() {
         return this.consumerTable;
+    }
+
+    public ExecutorService getNotifyClientExecutor() {
+        return notifyClientExecutor;
+    }
+
+    public BlockingQueue<Runnable> getNotifyClientThreadPoolQueue() {
+        return notifyClientThreadPoolQueue;
     }
 }
