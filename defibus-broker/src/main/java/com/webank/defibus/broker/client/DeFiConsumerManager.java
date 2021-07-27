@@ -17,7 +17,6 @@
 
 package com.webank.defibus.broker.client;
 
-import com.webank.defibus.broker.DeFiBrokerController;
 import com.webank.defibus.common.DeFiBusBrokerConfig;
 import com.webank.defibus.common.util.ReflectUtil;
 import io.netty.channel.Channel;
@@ -36,13 +35,13 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.broker.client.ClientChannelInfo;
 import org.apache.rocketmq.broker.client.ConsumerGroupEvent;
 import org.apache.rocketmq.broker.client.ConsumerGroupInfo;
 import org.apache.rocketmq.broker.client.ConsumerIdsChangeListener;
 import org.apache.rocketmq.broker.client.ConsumerManager;
 import org.apache.rocketmq.common.ThreadFactoryImpl;
-import org.apache.rocketmq.common.TopicConfig;
 import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 import org.apache.rocketmq.common.protocol.heartbeat.ConsumeType;
@@ -62,6 +61,9 @@ public class DeFiConsumerManager extends ConsumerManager {
     private final AdjustQueueNumStrategy adjustQueueNumStrategy;
     private final ExecutorService notifyClientExecutor;
     private final BlockingQueue<Runnable> notifyClientThreadPoolQueue;
+
+    private final ConcurrentHashMap<String,String> dedupMapForNotifyClientChange = new ConcurrentHashMap<>();
+    private final String dedupKeyPrefixForNotifyClientChange = "NCC$";
 
     public DeFiConsumerManager(final ConsumerIdsChangeListener consumerIdsChangeListener,
         final AdjustQueueNumStrategy strategy, DeFiBusBrokerConfig deFiBusBrokerConfig) {
@@ -207,20 +209,20 @@ public class DeFiConsumerManager extends ConsumerManager {
 
     private void asyncNotifyClientChange(final String group, DeFiConsumerGroupInfo deFiConsumerGroupInfo) {
         try {
-//            String dedupKey = dedupKeyPrefixForNotifyClientChange + group;
-//            String old = dedupMap.putIfAbsent(dedupKey, group);
-//            if (StringUtils.isNotBlank(old)) {
-//                return;
-//            }
+            String dedupKey = dedupKeyPrefixForNotifyClientChange + group;
+            String old = dedupMapForNotifyClientChange.putIfAbsent(dedupKey, group);
+            if (StringUtils.isNotBlank(old)) {
+                return;
+            }
             //如果 dedupMap 中存在该group, 则表明存在 还未被执行的通知，可忽略本次
             //如果 dedupMap 中不存在该group, 则表明要么存在正在执行的通知, 要么不存在即将被执行的通知, 需要将本次排队
             this.notifyClientExecutor.execute(() -> {
                 try {
-//                    dedupMap.remove(dedupKey);
+                    dedupMapForNotifyClientChange.remove(dedupKey);
                     if (deFiConsumerGroupInfo == null) {
                         return;
                     }
-                    consumerIdsChangeListener.handle(ConsumerGroupEvent.CHANGE, group, deFiConsumerGroupInfo.getAllChannel());
+                    consumerIdsChangeListener.handle(ConsumerGroupEvent.CHANGE, group, getNotifyClientChannel(deFiConsumerGroupInfo));
                 } catch (Exception ex) {
                 }
             });
@@ -229,27 +231,47 @@ public class DeFiConsumerManager extends ConsumerManager {
         }
     }
 
-    //    public List<Channel> getNotifyClientChannel(DeFiConsumerGroupInfo DeFiConsumerGroupInfo) {
-//        long startTime = System.currentTimeMillis();
-//        List<Channel> result = new ArrayList<>();
-//        Set<String> notifyClientId = new HashSet<>();
-//        Iterator<Map.Entry<SubscriptionDataKey, CopyOnWriteArraySet<String>>> it = DeFiConsumerGroupInfo.getClientIdMap().entrySet().iterator();
-//        while (it.hasNext()) {
-//            Map.Entry<SubscriptionDataKey, CopyOnWriteArraySet<String>> entry = it.next();
+    public List<Channel> getNotifyClientChannel(DeFiConsumerGroupInfo deFiConsumerGroupInfo) {
+        long startTime = System.currentTimeMillis();
+        List<Channel> result = new ArrayList<>();
+        Set<String> notifyClientId = new HashSet<>();
+        Iterator<Map.Entry<String, CopyOnWriteArraySet<String>>> it = deFiConsumerGroupInfo.getClientIdMap().entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, CopyOnWriteArraySet<String>> entry = it.next();
 //            TopicConfig topicConfig = this.DeFiBrokerController.getTopicConfigManager().selectTopicConfig(entry.getKey().getTopic());
 //            if (topicConfig != null) {
-//                notifyClientId.addAll(entry.getValue());
+            notifyClientId.addAll(entry.getValue());
 //            }
-//        }
-//        Iterator<Map.Entry<Channel, ClientChannelInfo>> channelInfoIter = DeFiConsumerGroupInfo.getChannelInfoTable().entrySet().iterator();
-//        while (channelInfoIter.hasNext()) {
-//            Map.Entry<Channel, ClientChannelInfo> entry = channelInfoIter.next();
-//            if (entry.getValue() != null && notifyClientId.contains(entry.getValue().getClientId())) {
-//                result.add(entry.getKey());
-//            }
-//        }
-//    }
+        }
+        Iterator<Map.Entry<Channel, ClientChannelInfo>> channelInfoIter = deFiConsumerGroupInfo.getChannelInfoTable().entrySet().iterator();
+        while (channelInfoIter.hasNext()) {
+            Map.Entry<Channel, ClientChannelInfo> entry = channelInfoIter.next();
+            if (entry.getValue() != null && notifyClientId.contains(entry.getValue().getClientId())) {
+                result.add(entry.getKey());
+            }
+        }
 
+        List<Channel> activeChannels = new ArrayList<>();
+        for (Channel chl : result) {
+            if (chl.isActive()) {
+                activeChannels.add(chl);
+            }
+        }
+
+        if (result.size() > 0) {
+            float activeRatio = (float) activeChannels.size() / result.size();
+            if (activeRatio <= 0.5f) {
+                log.info("inactive channel in group[{}] too much, activeChannels[{}], totalChannel[{}]",
+                    deFiConsumerGroupInfo.getGroupName(), activeChannels.size(), result.size());
+            }
+        }
+
+        long endTime = System.currentTimeMillis();
+        if ((endTime - startTime) >= 5) {
+            log.info("getNotifyClientChannel too long, time {} ms", (endTime - startTime));
+        }
+        return activeChannels;
+    }
 
     private void adjustQueueNum(final Set<String> oldSub, final Set<SubscriptionData> subList) {
         for (SubscriptionData subscriptionData : subList) {
