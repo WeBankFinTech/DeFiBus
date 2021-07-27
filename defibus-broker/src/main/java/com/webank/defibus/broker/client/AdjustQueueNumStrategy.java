@@ -366,4 +366,8 @@ public class AdjustQueueNumStrategy {
         INCREASE_QUEUE_NUM,
         DECREASE_QUEUE_NUM
     }
+
+    public DeFiBrokerController getDeFiBrokerController() {
+        return deFiBrokerController;
+    }
 }

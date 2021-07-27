@@ -42,6 +42,7 @@ import org.apache.rocketmq.broker.client.ConsumerGroupInfo;
 import org.apache.rocketmq.broker.client.ConsumerIdsChangeListener;
 import org.apache.rocketmq.broker.client.ConsumerManager;
 import org.apache.rocketmq.common.ThreadFactoryImpl;
+import org.apache.rocketmq.common.TopicConfig;
 import org.apache.rocketmq.common.constant.LoggerName;
 import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 import org.apache.rocketmq.common.protocol.heartbeat.ConsumeType;
@@ -238,10 +239,10 @@ public class DeFiConsumerManager extends ConsumerManager {
         Iterator<Map.Entry<String, CopyOnWriteArraySet<String>>> it = deFiConsumerGroupInfo.getClientIdMap().entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<String, CopyOnWriteArraySet<String>> entry = it.next();
-//            TopicConfig topicConfig = this.DeFiBrokerController.getTopicConfigManager().selectTopicConfig(entry.getKey().getTopic());
-//            if (topicConfig != null) {
+            TopicConfig topicConfig = this.adjustQueueNumStrategy.getDeFiBrokerController().getTopicConfigManager().selectTopicConfig(entry.getKey());
+            if (topicConfig != null) {
             notifyClientId.addAll(entry.getValue());
-//            }
+            }
         }
         Iterator<Map.Entry<Channel, ClientChannelInfo>> channelInfoIter = deFiConsumerGroupInfo.getChannelInfoTable().entrySet().iterator();
         while (channelInfoIter.hasNext()) {
