@@ -63,7 +63,7 @@ public class DeFiConsumerManager extends ConsumerManager {
     private final ExecutorService notifyClientExecutor;
     private final BlockingQueue<Runnable> notifyClientThreadPoolQueue;
 
-    private final ConcurrentHashMap<String,String> dedupMapForNotifyClientChange = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String> dedupMapForNotifyClientChange = new ConcurrentHashMap<>();
     private final String dedupKeyPrefixForNotifyClientChange = "NCC$";
 
     public DeFiConsumerManager(final ConsumerIdsChangeListener consumerIdsChangeListener,
@@ -205,7 +205,9 @@ public class DeFiConsumerManager extends ConsumerManager {
                     group);
                 it.remove();
             }
+            scanDirtyClientIdByGroup(consumerGroupInfo);
         }
+
     }
 
     private void asyncNotifyClientChange(final String group, DeFiConsumerGroupInfo deFiConsumerGroupInfo) {
@@ -241,7 +243,7 @@ public class DeFiConsumerManager extends ConsumerManager {
             Map.Entry<String, CopyOnWriteArraySet<String>> entry = it.next();
             TopicConfig topicConfig = this.adjustQueueNumStrategy.getDeFiBrokerController().getTopicConfigManager().selectTopicConfig(entry.getKey());
             if (topicConfig != null) {
-            notifyClientId.addAll(entry.getValue());
+                notifyClientId.addAll(entry.getValue());
             }
         }
         Iterator<Map.Entry<Channel, ClientChannelInfo>> channelInfoIter = deFiConsumerGroupInfo.getChannelInfoTable().entrySet().iterator();
@@ -311,4 +313,34 @@ public class DeFiConsumerManager extends ConsumerManager {
     public BlockingQueue<Runnable> getNotifyClientThreadPoolQueue() {
         return notifyClientThreadPoolQueue;
     }
+
+    public void scanDirtyClientIdByGroup(DeFiConsumerGroupInfo groupInfo) {
+        if (groupInfo != null) {
+            List<String> allChannelClientId = groupInfo.getAllClientId();
+            Iterator<Map.Entry<String, CopyOnWriteArraySet<String>>> it = groupInfo.getClientIdMap().entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<String, CopyOnWriteArraySet<String>> next = it.next();
+                Set<String> topicCid = new HashSet<>(next.getValue());
+                for (String cid : topicCid) {
+                    if (!allChannelClientId.contains(cid)) {
+                        //check again to avoid mistaken
+                        allChannelClientId = groupInfo.getAllClientId();
+                        if (!allChannelClientId.contains(cid)) {
+                            log.warn("SCAN DIRTY CLIENTID : {} in [{}] has no channel, maybe dirty. group: {} AllChannelClientId: {}", cid, next.getKey(), groupInfo.getGroupName(), allChannelClientId);
+                            if (this.adjustQueueNumStrategy.getDeFiBrokerController().getDeFiBusBrokerConfig().isAutoCleanDirtyClientId()) {
+                                boolean removed = next.getValue().remove(cid);
+                                if (removed) {
+                                    log.info("remove dirty clientId {} from {} success. {}", cid, next.getKey(), groupInfo.getGroupName());
+                                    this.consumerIdsChangeListener.handle(ConsumerGroupEvent.CHANGE, groupInfo.getGroupName(), getNotifyClientChannel(groupInfo));
+                                } else {
+                                    log.info("remove dirty clientId {} from {} fail. group: {} current cidList: {}", cid, next.getKey(), groupInfo.getGroupName(), next.getValue());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 }

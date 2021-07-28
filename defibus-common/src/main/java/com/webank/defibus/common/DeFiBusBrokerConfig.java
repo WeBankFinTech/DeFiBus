@@ -48,6 +48,8 @@ public class DeFiBusBrokerConfig {
 
     private boolean redirectMessageEnable = true;
 
+    private boolean autoCleanDirtyClientId = true;
+
     // whether reject sending when the depth exceeds threshold
     @ImportantField
     private boolean rejectSendWhenMaxDepth = true;
@@ -196,4 +198,11 @@ public class DeFiBusBrokerConfig {
         this.notifyClientThreadPoolQueueCapacity = notifyClientThreadPoolQueueCapacity;
     }
 
+    public boolean isAutoCleanDirtyClientId() {
+        return autoCleanDirtyClientId;
+    }
+
+    public void setAutoCleanDirtyClientId(boolean autoCleanDirtyClientId) {
+        this.autoCleanDirtyClientId = autoCleanDirtyClientId;
+    }
 }
