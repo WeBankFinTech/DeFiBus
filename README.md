@@ -8,7 +8,7 @@
 ![architecture1](./docs/images/dist-arch.png)
 
 名词解释
-DCN：Data Center Node（数据中心节点）
+DCN：Data Center Node（数据中心单元化节点）
 
 ### 系统架构
 ![architecture2](./docs/images/defibus-arch.png)
@@ -21,7 +21,7 @@ DeFiBus主要包括以下几个组件（模块）：
 
 * **GSL**：全局服务定位（Global Service Location）服务提供服务级别的路由发现。服务可以部署在不同的区域（比如不同的数据中心、逻辑分区等），服务请求方在请求某一个具体服务时，无需关注服务部署的区域，GSL能够根据服务发现规则自动定位到具体的服务，将服务信息返回给客户端。  
 
-* **[EventMesh](https://github.com/WeBankFinTech/EventMesh)**：服务代理提供TCP/HTTP接入方式，同时允许按照协议规范开发的C、GO、Python等其他语言客户端的接入。
+* **[EventMesh](https://github.com/apache/incubator-eventmesh)**：服务代理提供TCP/HTTP接入方式，同时允许按照协议规范开发的C、GO、Python等其他语言客户端的接入。
 
 * **ConfigCenter（CC）**：配置中心，提供HTTP接入方式，比如Namesrv的寻址以及其他配置。
 
@@ -40,7 +40,7 @@ DeFiBus主要包括以下几个组件（模块）：
 * [应用多活：应用多中心多活](docs/cn/features/5-multi-active.md)
 * [动态扩缩队列 ：自适应应用实例数量，动态调整队列个数](docs/cn/features/6-dynamic-adjust-queue.md)
 * [容错机制：故障和错误隔离](docs/cn/features/8-fault-tolerant.md)
-* [服务代理：云原生多语言的代理EventMesh](https://github.com/WeBankFinTech/EventMesh)
+* [服务代理：云原生多语言的代理EventMesh](https://github.com/apache/incubator-eventmesh)
 * 服务治理：服务元数据的管理(待开源)
 * 服务路由和定位：动态路由及定位(待开源)
 * 平滑升级：平滑升级、平滑扩容(待开源)
