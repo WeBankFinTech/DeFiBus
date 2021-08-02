@@ -60,6 +60,7 @@ public class DeFiPullMessageProcessor extends PullMessageProcessor {
             if (clientChannelInfo != null) {
                 String clientId = clientChannelInfo.getClientId();
                 deFiBrokerController.getClientRebalanceResultManager().updateListenMap(requestHeader.getConsumerGroup(), requestHeader.getTopic(), requestHeader.getQueueId(), clientId);
+                clientChannelInfo.setLastUpdateTimestamp(System.currentTimeMillis());
             }
         }
         handleProcessResult(requestHeader, response);
