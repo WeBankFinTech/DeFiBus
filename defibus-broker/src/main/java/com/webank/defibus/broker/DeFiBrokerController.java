@@ -96,7 +96,7 @@ public class DeFiBrokerController extends BrokerController {
 
         ConsumerIdsChangeListener consumerIdsChangeListener = (ConsumerIdsChangeListener) ReflectUtil.getSimpleProperty(BrokerController.class, this, "consumerIdsChangeListener");
         AdjustQueueNumStrategy adjustQueueNumStrategy = new AdjustQueueNumStrategy(this);
-        consumerManager = new DeFiConsumerManager(consumerIdsChangeListener, adjustQueueNumStrategy);
+        consumerManager = new DeFiConsumerManager(consumerIdsChangeListener, adjustQueueNumStrategy,deFiBusBrokerConfig);
 
         this.deFiManageExecutor =
             Executors.newFixedThreadPool(brokerConfig.getClientManageThreadPoolNums(), new ThreadFactoryImpl(
@@ -209,6 +209,7 @@ public class DeFiBrokerController extends BrokerController {
         deFiManageExecutor.shutdown();
         sendReplyMessageExecutor.shutdown();
         pushReplyMessageExecutor.shutdown();
+        consumerManager.getNotifyClientExecutor().shutdown();
 
         deFiScheduledExecutorService.shutdown();
         sendReplyScheduledExecutorService.shutdown();
@@ -275,11 +276,12 @@ public class DeFiBrokerController extends BrokerController {
 
     @Override
     public void printWaterMark() {
-        LOG_WATER_MARK.info("{\"SendQueueSize\":\"{}\",\"PullQueueSize\":\"{}\",\"GotQueueSize\":\"{}\",\"PushQueueSize\":\"{}\",\"SendSlowTimeMills\":\"{}\",\"PullSlowTimeMills\":\"{}\",\"HeartbeatQueueSize\":\"{}\"}",
+        LOG_WATER_MARK.info("{\"SendQueueSize\":\"{}\",\"PullQueueSize\":\"{}\",\"GotQueueSize\":\"{}\",\"PushQueueSize\":\"{}\",\"NotifyClientQueueSize\":\"{}\",\"SendSlowTimeMills\":\"{}\",\"PullSlowTimeMills\":\"{}\",\"HeartbeatQueueSize\":\"{}\"}",
             this.getSendThreadPoolQueue().size(),
             this.getPullThreadPoolQueue().size(),
             this.sendReplyThreadPoolQueue.size(),
             this.pushReplyThreadPoolQueue.size(),
+            consumerManager.getNotifyClientThreadPoolQueue().size(),
             this.headSlowTimeMills4SendThreadPoolQueue(),
             this.headSlowTimeMills4PullThreadPoolQueue(),
             this.getHeartbeatThreadPoolQueue().size());
@@ -321,4 +323,5 @@ public class DeFiBrokerController extends BrokerController {
     public ClientRebalanceResultManager getClientRebalanceResultManager() {
         return clientRebalanceResultManager;
     }
+
 }
