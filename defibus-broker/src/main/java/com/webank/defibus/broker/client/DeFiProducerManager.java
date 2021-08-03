@@ -99,7 +99,6 @@ public class DeFiProducerManager extends ProducerManager {
     public void unregisterProducer(final String group, final ClientChannelInfo clientChannelInfo) {
         super.unregisterProducer(group, clientChannelInfo);
         producerChannelTable.remove(clientChannelInfo.getClientId());
-        System.out.println("unregister producer, channel is "+clientChannelInfo.getChannel());
     }
 
     public ClientChannelInfo getClientChannel(String clientId) {
