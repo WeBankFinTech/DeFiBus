@@ -63,4 +63,6 @@ public class DeFiBusConstant {
 
     public static final String IDC_SEPERATER = "-";
 
+    public static final String CLIENT_ID = "clientId";
+
 }

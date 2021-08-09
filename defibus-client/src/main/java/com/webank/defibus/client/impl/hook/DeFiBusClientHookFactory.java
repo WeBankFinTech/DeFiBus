@@ -17,6 +17,7 @@
 
 package com.webank.defibus.client.impl.hook;
 
+import com.webank.defibus.hook.ClientRPCHook;
 import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.slf4j.Logger;
@@ -38,5 +39,9 @@ public class DeFiBusClientHookFactory {
             public void doAfterResponse(String remoteAddr, RemotingCommand request, RemotingCommand response) {
             }
         };
+    }
+
+    public static RPCHook createClientRPCHook(final RPCHook rpcHook) {
+        return new ClientRPCHook(rpcHook);
     }
 }
