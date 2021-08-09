@@ -6,14 +6,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.common.protocol.RequestCode;
 import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ClientRPCHook implements RPCHook {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClientRPCHook.class);
-
     private RPCHook rpcHook;
-
     private String clientId;
 
     public ClientRPCHook(RPCHook rpcHook) {
@@ -38,7 +33,6 @@ public class ClientRPCHook implements RPCHook {
 
     @Override
     public void doAfterResponse(String remoteAddr, RemotingCommand request, RemotingCommand response) {
-
     }
 
     private void setRequestExtInfo(RemotingCommand request) {
@@ -47,7 +41,6 @@ public class ClientRPCHook implements RPCHook {
             extFields = new HashMap<>();
             request.setExtFields(extFields);
         }
-
         int code = request.getCode();
         switch (code) {
             case RequestCode.PULL_MESSAGE: {
@@ -56,7 +49,6 @@ public class ClientRPCHook implements RPCHook {
                 }
                 break;
             }
-
             default:
                 break;
         }
