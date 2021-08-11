@@ -17,19 +17,9 @@
 
 package com.webank.defibus.broker.client;
 
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
-
 import com.webank.defibus.broker.DeFiBrokerController;
-import io.netty.channel.Channel;
+import com.webank.defibus.common.DeFiBusConstant;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.broker.client.ConsumerGroupInfo;
 import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.TopicConfig;
@@ -39,15 +29,20 @@ import org.apache.rocketmq.store.config.BrokerRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.webank.defibus.common.DeFiBusConstant;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
+
+import io.netty.channel.Channel;
 
 public class AdjustQueueNumStrategy {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     private final DeFiBrokerController deFiBrokerController;
     private final ScheduledThreadPoolExecutor autoScaleQueueSizeExecutorService;
-
-    private final String dedupKeyPrefixForQueueScale = "QS$";
-    private final ConcurrentHashMap<String,String> dedupMapForQueueScale = new ConcurrentHashMap<>();
 
     public AdjustQueueNumStrategy(final DeFiBrokerController deFiBrokerController) {
         this.deFiBrokerController = deFiBrokerController;
@@ -97,20 +92,11 @@ public class AdjustQueueNumStrategy {
     }
 
     private void adjustReadQueueNumByConsumerCount(String topic, long delayMills, AdjustType mode) {
-        String dedupKey = dedupKeyPrefixForQueueScale + "R$" + mode + "$" + topic;
-        String old = dedupMapForQueueScale.putIfAbsent(dedupKey,topic);
-        //若old不为空，表示该topic存在即将执行的任务，本次任务可以忽略
-        //若不存在，表示该topic的任务正在执行，或者没有任务，本次不可忽略
-        if(StringUtils.isNotBlank(old)) {
-            return;
-        }
-
         Runnable scaleQueueTask = new Runnable() {
             private int alreadyRetryTimes = 0;
 
             @Override
             public void run() {
-                dedupMapForQueueScale.remove(dedupKey);
                 TopicConfig topicConfig = deFiBrokerController.getTopicConfigManager().getTopicConfigTable().get(topic);
                 if (topicConfig != null) {
                     synchronized (topicConfig) {
@@ -132,7 +118,7 @@ public class AdjustQueueNumStrategy {
                             log.info("try adjust read queue size to {} for [{}], prev: {}, {}", adjustReadQueueSize, topic, topicConfig.getReadQueueNums(), mode);
                             if (adjustReadQueueSize < topicConfig.getWriteQueueNums()) {
                                 log.info("adjust read queues to {} for [{}] fail. read queue size can't less than write queue size[{}]. {}",
-                                    adjustReadQueueSize, topic, topicConfig.getWriteQueueNums(), mode);
+                                        adjustReadQueueSize, topic, topicConfig.getWriteQueueNums(), mode);
                                 return;
                             }
                             boolean canAdjustReadQueueSize = isCanAdjustReadQueueSize(topic, adjustReadQueueSize);
@@ -171,18 +157,9 @@ public class AdjustQueueNumStrategy {
     }
 
     private void adjustWriteQueueNumByConsumerCount(String topic, long delayMills, AdjustType mode) {
-        String dedupKey = dedupKeyPrefixForQueueScale + "W$" + mode + "$" + topic;
-        String old = dedupMapForQueueScale.putIfAbsent(dedupKey,topic);
-        //若old不为空，表示该topic存在即将执行的任务，本次任务可以忽略
-        //若不存在，表示该topic的任务正在执行，或者没有任务，本次不可忽略
-        if(StringUtils.isNotBlank(old)) {
-            return;
-        }
-
         Runnable scaleTask = new Runnable() {
             @Override
             public void run() {
-                dedupMapForQueueScale.remove(dedupKey);
                 TopicConfig topicConfig = deFiBrokerController.getTopicConfigManager().getTopicConfigTable().get(topic);
                 if (topicConfig != null) {
                     synchronized (topicConfig) {
@@ -209,7 +186,7 @@ public class AdjustQueueNumStrategy {
                                 notifyWhenTopicConfigChange(topic);
                             } else {
                                 log.info("adjust write queues to {} for [{}] fail. target write queue size can't less than 0 or greater than read queue size[{}]. mode: {}",
-                                    adjustWriteQueueSize, topic, topicConfig.getReadQueueNums(), mode);
+                                        adjustWriteQueueSize, topic, topicConfig.getReadQueueNums(), mode);
                             }
                         } else {
                             log.info("no need to adjust write queue size for [{}]. now [w:{}/r:{}]. {}", topic, topicConfig.getWriteQueueNums(), topicConfig.getReadQueueNums(), mode);
@@ -257,7 +234,7 @@ public class AdjustQueueNumStrategy {
         int scaleQueueSize = 0;
         long nearbyClients = nearbyClients(cidList);
         if (nearbyClients != 0) {
-            scaleQueueSize = new Long(nearbyClients).intValue();
+      scaleQueueSize = Long.valueOf(nearbyClients).intValue();
         } else if (isAllClientsHaveNotIDCSurffix(cidList)) {
             scaleQueueSize = cidList.size();
         }
@@ -273,7 +250,7 @@ public class AdjustQueueNumStrategy {
                     String idc = cidArr[cidArr.length - 1];
                     String clusterName = deFiBrokerController.getBrokerConfig().getBrokerClusterName();
                     if (clusterName.toUpperCase().startsWith(idc) ||
-                        idc.startsWith(clusterName.toUpperCase())) {
+                            idc.startsWith(clusterName.toUpperCase())) {
                         return true;
                     }
                 }
@@ -355,7 +332,7 @@ public class AdjustQueueNumStrategy {
             long ackOffset = deFiBrokerController.getConsumeQueueManager().queryOffset(group, topic, queueId);
             if (ackOffset < maxOffset) {
                 log.info("not finish consume message for topic: {} by group : {}, queueId: {}, ackOffset: {}, maxOffset: {}",
-                    topic, group, queueId, ackOffset, maxOffset);
+                        topic, group, queueId, ackOffset, maxOffset);
                 return false;
             }
         }
@@ -365,9 +342,5 @@ public class AdjustQueueNumStrategy {
     public enum AdjustType {
         INCREASE_QUEUE_NUM,
         DECREASE_QUEUE_NUM
-    }
-
-    public DeFiBrokerController getDeFiBrokerController() {
-        return deFiBrokerController;
     }
 }
