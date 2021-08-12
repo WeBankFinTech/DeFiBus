@@ -19,6 +19,7 @@ package com.webank.defibus.broker.client;
 
 import com.webank.defibus.common.DeFiBusBrokerConfig;
 import com.webank.defibus.common.util.ReflectUtil;
+
 import io.netty.channel.Channel;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -36,6 +37,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
+
 import org.apache.rocketmq.broker.client.ClientChannelInfo;
 import org.apache.rocketmq.broker.client.ConsumerGroupEvent;
 import org.apache.rocketmq.broker.client.ConsumerGroupInfo;
@@ -66,6 +68,7 @@ public class DeFiConsumerManager extends ConsumerManager {
     private final ConcurrentHashMap<String, String> dedupMapForNotifyClientChange = new ConcurrentHashMap<>();
     private final String dedupKeyPrefixForNotifyClientChange = "NCC$";
 
+    @SuppressWarnings("unchecked")
     public DeFiConsumerManager(final ConsumerIdsChangeListener consumerIdsChangeListener,
         final AdjustQueueNumStrategy strategy, DeFiBusBrokerConfig deFiBusBrokerConfig) {
         super(consumerIdsChangeListener);

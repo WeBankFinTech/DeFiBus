@@ -19,6 +19,7 @@ package com.webank.defibus.broker.client;
 
 import io.netty.channel.Channel;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +38,7 @@ public class DeFiProducerManager extends ProducerManager {
         = new ConcurrentHashMap<String/* clientId*/, ClientChannelInfo>();
     private final Lock deleteChannelLock = new ReentrantLock();
     private static final long LockTimeoutMillis = 3000;
+    private static final long CHANNEL_EXPIRED_TIMEOUT = 1000 * 120;
 
     @SuppressWarnings("unchecked")
     public DeFiProducerManager() {
@@ -46,6 +48,16 @@ public class DeFiProducerManager extends ProducerManager {
     @Override
     public void scanNotActiveChannel() {
         super.scanNotActiveChannel();
+        Iterator<Map.Entry<String, ClientChannelInfo>> it = producerChannelTable.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, ClientChannelInfo> item = it.next();
+            ClientChannelInfo info = item.getValue();
+            if (System.currentTimeMillis() - info.getLastUpdateTimestamp() > CHANNEL_EXPIRED_TIMEOUT) {
+                it.remove();
+                LOG.warn("SCAN: remove expired channel[{}] from DeFiProducerManager producerChannelTable,clientId is {}",
+                    info.getChannel(), item.getKey());
+            }
+        }
     }
 
     @Override

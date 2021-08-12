@@ -17,17 +17,8 @@
 
 package com.webank.defibus.broker.client;
 
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
-
 import com.webank.defibus.broker.DeFiBrokerController;
-import io.netty.channel.Channel;
+import com.webank.defibus.common.DeFiBusConstant;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.broker.client.ConsumerGroupInfo;
@@ -39,7 +30,15 @@ import org.apache.rocketmq.store.config.BrokerRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.webank.defibus.common.DeFiBusConstant;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
+
+import io.netty.channel.Channel;
 
 public class AdjustQueueNumStrategy {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
@@ -257,7 +256,7 @@ public class AdjustQueueNumStrategy {
         int scaleQueueSize = 0;
         long nearbyClients = nearbyClients(cidList);
         if (nearbyClients != 0) {
-            scaleQueueSize = new Long(nearbyClients).intValue();
+      scaleQueueSize = Long.valueOf(nearbyClients).intValue();
         } else if (isAllClientsHaveNotIDCSurffix(cidList)) {
             scaleQueueSize = cidList.size();
         }
