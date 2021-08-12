@@ -28,6 +28,10 @@ public class DeFiBusBrokerConfig {
 
     private int pushReplyThreadPoolQueueCapacity = 10000;
 
+    private int notifyClientThreadPoolQueueCapacity = 50000;
+
+    private int notifyClientThreadPoolNums = Math.min(12, Runtime.getRuntime().availableProcessors());
+
     @ImportantField
     private String rmqAddressServerSubGroup = "namesrvAddr";
 
@@ -43,6 +47,8 @@ public class DeFiBusBrokerConfig {
     private int minQueueNum = 1;
 
     private boolean redirectMessageEnable = true;
+
+    private boolean autoCleanDirtyClientId = true;
 
     // whether reject sending when the depth exceeds threshold
     @ImportantField
@@ -174,5 +180,29 @@ public class DeFiBusBrokerConfig {
 
     public int getCheckQueueListeningPeriod() {
         return checkQueueListeningPeriod;
+    }
+
+    public int getNotifyClientThreadPoolNums() {
+        return notifyClientThreadPoolNums;
+    }
+
+    public void setNotifyClientThreadPoolNums(int notifyClientThreadPoolNums) {
+        this.notifyClientThreadPoolNums = notifyClientThreadPoolNums;
+    }
+
+    public int getNotifyClientThreadPoolQueueCapacity() {
+        return notifyClientThreadPoolQueueCapacity;
+    }
+
+    public void setNotifyClientThreadPoolQueueCapacity(int notifyClientThreadPoolQueueCapacity) {
+        this.notifyClientThreadPoolQueueCapacity = notifyClientThreadPoolQueueCapacity;
+    }
+
+    public boolean isAutoCleanDirtyClientId() {
+        return autoCleanDirtyClientId;
+    }
+
+    public void setAutoCleanDirtyClientId(boolean autoCleanDirtyClientId) {
+        this.autoCleanDirtyClientId = autoCleanDirtyClientId;
     }
 }
