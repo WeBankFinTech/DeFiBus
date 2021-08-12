@@ -105,20 +105,6 @@ public class DeFiConsumerGroupInfo extends ConsumerGroupInfo {
         return whichTopic;
     }
 
-    @Override
-    public boolean doChannelCloseEvent(final String remoteAddr, final Channel channel) {
-        try {
-            final ClientChannelInfo channelInfo = getChannelInfoTable().get(channel);
-            if (channelInfo != null) {
-                unregisterClientId(channelInfo);
-            }
-            super.doChannelCloseEvent(remoteAddr, channel);
-            return true;
-        } catch (Exception ex) {
-            log.warn("doChannelCloseEvent fail.", ex);
-            return false;
-        }
-    }
 
     public Set<String> findSubscribedTopicByClientId(final String clientId) {
         Set<String> result = new HashSet<>();
@@ -138,5 +124,9 @@ public class DeFiConsumerGroupInfo extends ConsumerGroupInfo {
             return clientIdMap.get(topic);
         }
         return new HashSet<>();
+    }
+
+    public ConcurrentHashMap<String, CopyOnWriteArraySet<String>> getClientIdMap() {
+        return clientIdMap;
     }
 }
