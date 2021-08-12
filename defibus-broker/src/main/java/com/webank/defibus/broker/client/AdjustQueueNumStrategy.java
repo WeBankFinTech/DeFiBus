@@ -20,6 +20,7 @@ package com.webank.defibus.broker.client;
 import com.webank.defibus.broker.DeFiBrokerController;
 import com.webank.defibus.common.DeFiBusConstant;
 
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.broker.client.ConsumerGroupInfo;
 import org.apache.rocketmq.common.MixAll;
