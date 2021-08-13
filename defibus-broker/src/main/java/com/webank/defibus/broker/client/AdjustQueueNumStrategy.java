@@ -249,7 +249,7 @@ public class AdjustQueueNumStrategy {
                 }
             }
         }
-        log.info("calculate queue size by max consumer count, result: {} cidList: {}", queueSize, maxCidList);
+        log.info("calculate queue size by max consumer count in same IDC, result: {} cidList: {}", queueSize, maxCidList);
         return queueSize;
     }
 
@@ -258,7 +258,7 @@ public class AdjustQueueNumStrategy {
         long nearbyClients = nearbyClients(cidList);
         if (nearbyClients != 0) {
       scaleQueueSize = Long.valueOf(nearbyClients).intValue();
-        } else if (isAllClientsHaveNotIDCSurffix(cidList)) {
+        } else if (isAllClientsHaveNotIDCSuffix(cidList)) {
             scaleQueueSize = cidList.size();
         }
         return scaleQueueSize;
@@ -283,7 +283,7 @@ public class AdjustQueueNumStrategy {
         return locClient;
     }
 
-    private boolean isAllClientsHaveNotIDCSurffix(Set<String> cidList) {
+    private boolean isAllClientsHaveNotIDCSuffix(Set<String> cidList) {
         long suffixClients = cidList.stream().filter(new Predicate<String>() {
             @Override
             public boolean test(String cid) {
