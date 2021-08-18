@@ -19,6 +19,7 @@ package com.webank.defibus.broker.processor;
 
 import com.webank.defibus.broker.DeFiBrokerController;
 import io.netty.channel.ChannelHandlerContext;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.broker.BrokerController;
 import org.apache.rocketmq.broker.client.ClientChannelInfo;
 import org.apache.rocketmq.broker.client.ConsumerGroupInfo;
@@ -32,6 +33,7 @@ import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.webank.defibus.common.DeFiBusConstant.CLIENT_ID;
 import static org.apache.rocketmq.common.protocol.ResponseCode.NO_PERMISSION;
 import static org.apache.rocketmq.common.protocol.ResponseCode.PULL_NOT_FOUND;
 import static org.apache.rocketmq.common.protocol.ResponseCode.SUBSCRIPTION_GROUP_NOT_EXIST;
@@ -57,8 +59,14 @@ public class DeFiPullMessageProcessor extends PullMessageProcessor {
         ConsumerGroupInfo consumerGroupInfo = deFiBrokerController.getConsumerManager().getConsumerGroupInfo(requestHeader.getConsumerGroup());
         if (consumerGroupInfo != null) {
             ClientChannelInfo clientChannelInfo = consumerGroupInfo.getChannelInfoTable().get(ctx.channel());
+            String clientId = request.getExtFields().getOrDefault(CLIENT_ID, null);
             if (clientChannelInfo != null) {
-                String clientId = clientChannelInfo.getClientId();
+                if (StringUtils.isBlank(clientId) && clientChannelInfo.getClientId() != null) {
+                    clientId = clientChannelInfo.getClientId();
+                }
+                if (clientId == null) {
+                    LOG.warn("clientId is null, group {}, channel {}", consumerGroupInfo.getGroupName(), ctx.channel());
+                }
                 deFiBrokerController.getClientRebalanceResultManager().updateListenMap(requestHeader.getConsumerGroup(), requestHeader.getTopic(), requestHeader.getQueueId(), clientId);
                 clientChannelInfo.setLastUpdateTimestamp(System.currentTimeMillis());
             }
