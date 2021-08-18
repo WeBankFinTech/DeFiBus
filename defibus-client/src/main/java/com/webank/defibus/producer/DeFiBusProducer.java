@@ -26,6 +26,7 @@ import com.webank.defibus.client.impl.producer.DeFiBusProducerImpl;
 import com.webank.defibus.client.impl.producer.RRCallback;
 import com.webank.defibus.common.DeFiBusConstant;
 import com.webank.defibus.common.DeFiBusVersion;
+import com.webank.defibus.hook.ClientRPCHook;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -60,7 +61,7 @@ public class DeFiBusProducer {
     }
 
     public DeFiBusProducer(DeFiBusClientConfig deFiBusClientConfig) {
-        RPCHook rpcHookForAuth = DeFiBusClientHookFactory.createRPCHook(deFiBusClientConfig.getRpcHook());
+        RPCHook rpcHookForAuth = DeFiBusClientHookFactory.createClientRPCHook(deFiBusClientConfig.getRpcHook());
         defaultMQProducer = new DefaultMQProducer(deFiBusClientConfig.getProducerGroup(), rpcHookForAuth);
         defaultMQProducer.setVipChannelEnabled(false);
         this.rpcHook = rpcHookForAuth;
@@ -92,6 +93,7 @@ public class DeFiBusProducer {
                 }
                 this.defaultMQProducer.setInstanceName(instanceName);
 
+
                 this.defaultMQProducer.setPollNameServerInterval(deFiBusClientConfig.getPollNameServerInterval());
                 this.defaultMQProducer.setRetryTimesWhenSendAsyncFailed(deFiBusClientConfig.getRetryTimesWhenSendAsyncFailed());
                 this.defaultMQProducer.setRetryTimesWhenSendFailed(deFiBusClientConfig.getRetryTimesWhenSendFailed());
@@ -104,6 +106,8 @@ public class DeFiBusProducer {
                     DeFiBusClientAPIImpl deFiClientAPI = (DeFiBusClientAPIImpl) deFiBusClientInstance.getMQClientAPIImpl();
                     deFiClientAPI.setWsAddr(deFiBusClientConfig.getWsAddr());
                 }
+                //for setting clientId
+                ((ClientRPCHook)this.rpcHook).setClientId(deFiBusClientInstance.getClientId());
 
                 deFiBusProducerImpl = new DeFiBusProducerImpl(this, deFiBusClientConfig, deFiBusClientInstance);
                 this.defaultMQProducer.start();

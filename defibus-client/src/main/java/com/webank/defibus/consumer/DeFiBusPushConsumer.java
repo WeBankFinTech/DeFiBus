@@ -25,6 +25,7 @@ import com.webank.defibus.client.impl.hook.DeFiBusClientHookFactory;
 import com.webank.defibus.client.impl.rebalance.AllocateMessageQueueByIDC;
 import com.webank.defibus.common.DeFiBusConstant;
 import com.webank.defibus.common.DeFiBusVersion;
+import com.webank.defibus.hook.ClientRPCHook;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,7 +62,7 @@ public class DeFiBusPushConsumer {
 
     public DeFiBusPushConsumer(final DeFiBusClientConfig deFiBusClientConfig) {
         this.deFiBusClientConfig = deFiBusClientConfig;
-        RPCHook rpcHookForAuth = DeFiBusClientHookFactory.createRPCHook(deFiBusClientConfig.getRpcHook());
+        RPCHook rpcHookForAuth = DeFiBusClientHookFactory.createClientRPCHook(deFiBusClientConfig.getRpcHook());
         this.rpcHook = rpcHookForAuth;
         this.allocateMessageQueueStrategy = new AllocateMessageQueueByIDC();
 
@@ -101,6 +102,8 @@ public class DeFiBusPushConsumer {
             defaultMQPushConsumer.setHeartbeatBrokerInterval(deFiBusClientConfig.getHeartbeatBrokerInterval());
 
             deFiBusClientInstance = DeFiBusClientManager.getInstance().getAndCreateDeFiBusClientInstance(defaultMQPushConsumer, rpcHook);
+            //for setting clientId when pulling message
+            ((ClientRPCHook)this.rpcHook).setClientId(deFiBusClientInstance.getClientId());
 
             deFiBusClientInstance.start();
 
