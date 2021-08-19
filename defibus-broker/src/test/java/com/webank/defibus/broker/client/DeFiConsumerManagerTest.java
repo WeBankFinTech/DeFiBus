@@ -59,7 +59,7 @@ public class DeFiConsumerManagerTest {
 
     @Before
     public void init() {
-        deFiConsumerManager = new DeFiConsumerManager(consumerIdsChangeListener, adjustQueueNumStrategy);
+        deFiConsumerManager = new DeFiConsumerManager(consumerIdsChangeListener, adjustQueueNumStrategy,deFiBrokerController);
         mockChannel = mock(Channel.class);
         clientChannelInfo = new ClientChannelInfo(mockChannel, clientId, LanguageCode.JAVA, 100);
         consumerData = createConsumerData(group, topic);

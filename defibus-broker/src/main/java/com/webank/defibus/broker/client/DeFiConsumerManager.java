@@ -17,9 +17,10 @@
 
 package com.webank.defibus.broker.client;
 
+import com.webank.defibus.broker.DeFiBrokerController;
+import com.webank.defibus.broker.consumequeue.ConsumeQueueAccessLockManager;
 import com.webank.defibus.common.DeFiBusBrokerConfig;
 import com.webank.defibus.common.util.ReflectUtil;
-
 import io.netty.channel.Channel;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -37,7 +38,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
-
 import org.apache.rocketmq.broker.client.ClientChannelInfo;
 import org.apache.rocketmq.broker.client.ConsumerGroupEvent;
 import org.apache.rocketmq.broker.client.ConsumerGroupInfo;
@@ -64,16 +64,19 @@ public class DeFiConsumerManager extends ConsumerManager {
     private final AdjustQueueNumStrategy adjustQueueNumStrategy;
     private final ExecutorService notifyClientExecutor;
     private final BlockingQueue<Runnable> notifyClientThreadPoolQueue;
+    private final DeFiBrokerController deFiBrokerController;
 
     private final ConcurrentHashMap<String, String> dedupMapForNotifyClientChange = new ConcurrentHashMap<>();
     private final String dedupKeyPrefixForNotifyClientChange = "NCC$";
 
     @SuppressWarnings("unchecked")
     public DeFiConsumerManager(final ConsumerIdsChangeListener consumerIdsChangeListener,
-        final AdjustQueueNumStrategy strategy, DeFiBusBrokerConfig deFiBusBrokerConfig) {
+        final AdjustQueueNumStrategy strategy, DeFiBrokerController deFiBrokerController) {
         super(consumerIdsChangeListener);
         this.consumerIdsChangeListener = consumerIdsChangeListener;
         this.adjustQueueNumStrategy = strategy;
+        this.deFiBrokerController = deFiBrokerController;
+        DeFiBusBrokerConfig deFiBusBrokerConfig =deFiBrokerController.getDeFiBusBrokerConfig();
         this.notifyClientThreadPoolQueue = new LinkedBlockingQueue<Runnable>(deFiBusBrokerConfig.getNotifyClientThreadPoolQueueCapacity());
         this.notifyClientExecutor = new ThreadPoolExecutor(
             deFiBusBrokerConfig.getNotifyClientThreadPoolNums(),
@@ -125,6 +128,7 @@ public class DeFiConsumerManager extends ConsumerManager {
         Set<String> subscribeTopics = null;
         if (null != consumerGroupInfo) {
             DeFiConsumerGroupInfo deFiConsumerGroupInfo = (DeFiConsumerGroupInfo) consumerGroupInfo;
+            this.removeAccessLock(deFiConsumerGroupInfo,clientChannelInfo);
             subscribeTopics = deFiConsumerGroupInfo.unregisterClientId(clientChannelInfo);
         }
         super.unregisterConsumer(group, clientChannelInfo, isNotifyConsumerIdsChangedEnable);
@@ -132,6 +136,18 @@ public class DeFiConsumerManager extends ConsumerManager {
         if (subscribeTopics != null) {
             for (String topic : subscribeTopics) {
                 adjustQueueNumStrategy.decreaseQueueNum(topic);
+            }
+        }
+    }
+
+    public void removeAccessLock(DeFiConsumerGroupInfo info,ClientChannelInfo clientChannelInfo) {
+        ConsumeQueueAccessLockManager accessLockManager = this.deFiBrokerController.getMqAccessLockManager();
+        String group = info.getGroupName();
+        String clientId = clientChannelInfo.getClientId();
+        for (Map.Entry<String, CopyOnWriteArraySet<String>> subEntry:info.getClientIdMap().entrySet()) {
+            String topic = subEntry.getKey();
+            if (subEntry.getValue().contains(clientId)) {
+                accessLockManager.removeAccessLock(group,topic,clientId);
             }
         }
     }
@@ -148,6 +164,7 @@ public class DeFiConsumerManager extends ConsumerManager {
             if (info.getChannelInfoTable().get(channel) != null) {
                 ClientChannelInfo clientChannelInfo = info.getChannelInfoTable().get(channel);
                 //移除clientId
+                this.removeAccessLock(deFiConsumerGroupInfo,clientChannelInfo);
                 subscribeTopics = deFiConsumerGroupInfo.unregisterClientId(clientChannelInfo);
                 //缩Q
                 if (subscribeTopics != null) {
@@ -191,6 +208,7 @@ public class DeFiConsumerManager extends ConsumerManager {
                         RemotingHelper.parseChannelRemoteAddr(clientChannelInfo.getChannel()), group);
                     RemotingUtil.closeChannel(clientChannelInfo.getChannel());
                     itChannel.remove();
+                    this.removeAccessLock(consumerGroupInfo,clientChannelInfo);
                     Set<String> subscribeTopics = consumerGroupInfo.unregisterClientId(clientChannelInfo);
                     if (subscribeTopics != null) {
                         for (String topic : subscribeTopics) {
@@ -244,7 +262,7 @@ public class DeFiConsumerManager extends ConsumerManager {
         Iterator<Map.Entry<String, CopyOnWriteArraySet<String>>> it = deFiConsumerGroupInfo.getClientIdMap().entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<String, CopyOnWriteArraySet<String>> entry = it.next();
-            TopicConfig topicConfig = this.adjustQueueNumStrategy.getDeFiBrokerController().getTopicConfigManager().selectTopicConfig(entry.getKey());
+            TopicConfig topicConfig = this.deFiBrokerController.getTopicConfigManager().selectTopicConfig(entry.getKey());
             if (topicConfig != null) {
                 notifyClientId.addAll(entry.getValue());
             }
@@ -330,7 +348,7 @@ public class DeFiConsumerManager extends ConsumerManager {
                         allChannelClientId = groupInfo.getAllClientId();
                         if (!allChannelClientId.contains(cid)) {
                             log.warn("SCAN DIRTY CLIENTID : {} in [{}] has no channel, maybe dirty. group: {} AllChannelClientId: {}", cid, next.getKey(), groupInfo.getGroupName(), allChannelClientId);
-                            if (this.adjustQueueNumStrategy.getDeFiBrokerController().getDeFiBusBrokerConfig().isAutoCleanDirtyClientId()) {
+                            if (this.deFiBrokerController.getDeFiBusBrokerConfig().isAutoCleanDirtyClientId()) {
                                 boolean removed = next.getValue().remove(cid);
                                 if (removed) {
                                     log.info("remove dirty clientId {} from {} success. {}", cid, next.getKey(), groupInfo.getGroupName());
