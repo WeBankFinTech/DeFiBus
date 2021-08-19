@@ -70,6 +70,15 @@ public class DeFiBusBrokerConfig {
     @ImportantField
     private boolean checkQueueListening = true;
 
+    @ImportantField
+    private long lockQueueTimeout = 100;
+
+    @ImportantField
+    private int maxDeliverOffsetNoChangeTimes = 3;
+
+    @ImportantField
+    private int mqAccessControlEnable = 1;
+
     public int getSendReplyMessageThreadPoolNums() {
         return sendReplyMessageThreadPoolNums;
     }
@@ -204,5 +213,30 @@ public class DeFiBusBrokerConfig {
 
     public void setAutoCleanDirtyClientId(boolean autoCleanDirtyClientId) {
         this.autoCleanDirtyClientId = autoCleanDirtyClientId;
+    }
+
+    public long getLockQueueTimeout() {
+        return lockQueueTimeout;
+    }
+
+    public void setLockQueueTimeout(long lockQueueTimeout) {
+        this.lockQueueTimeout = lockQueueTimeout;
+    }
+
+    public int getMaxDeliverOffsetNoChangeTimes() {
+        return maxDeliverOffsetNoChangeTimes;
+    }
+
+    public void setMaxDeliverOffsetNoChangeTimes(int maxDeliverOffsetNoChangeTimes) {
+        this.maxDeliverOffsetNoChangeTimes = maxDeliverOffsetNoChangeTimes;
+    }
+
+
+    public int getMqAccessControlEnable() {
+        return mqAccessControlEnable;
+    }
+
+    public void setMqAccessControlEnable(int mqAccessControlEnable) {
+        this.mqAccessControlEnable = mqAccessControlEnable;
     }
 }

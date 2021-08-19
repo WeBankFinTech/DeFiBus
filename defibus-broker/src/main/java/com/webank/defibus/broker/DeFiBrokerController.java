@@ -21,6 +21,7 @@ import com.webank.defibus.broker.client.AdjustQueueNumStrategy;
 import com.webank.defibus.broker.client.DeFiConsumerManager;
 import com.webank.defibus.broker.client.DeFiProducerManager;
 import com.webank.defibus.broker.consumequeue.ClientRebalanceResultManager;
+import com.webank.defibus.broker.consumequeue.ConsumeQueueAccessLockManager;
 import com.webank.defibus.broker.consumequeue.ConsumeQueueManager;
 import com.webank.defibus.broker.consumequeue.MessageRedirectManager;
 import com.webank.defibus.broker.monitor.QueueListeningMonitor;
@@ -87,6 +88,7 @@ public class DeFiBrokerController extends BrokerController {
     private DeFiPullMessageProcessor deFiPullMessageProcessor;
     private MessageRedirectManager messageRedirectManager;
     private ClientRebalanceResultManager clientRebalanceResultManager;
+    private ConsumeQueueAccessLockManager mqAccessLockManager;
 
     public DeFiBrokerController(BrokerConfig brokerConfig, NettyServerConfig nettyServerConfig,
         NettyClientConfig nettyClientConfig, MessageStoreConfig messageStoreConfig,
@@ -95,8 +97,6 @@ public class DeFiBrokerController extends BrokerController {
         producerManager = new DeFiProducerManager();
 
         ConsumerIdsChangeListener consumerIdsChangeListener = (ConsumerIdsChangeListener) ReflectUtil.getSimpleProperty(BrokerController.class, this, "consumerIdsChangeListener");
-        AdjustQueueNumStrategy adjustQueueNumStrategy = new AdjustQueueNumStrategy(this);
-        consumerManager = new DeFiConsumerManager(consumerIdsChangeListener, adjustQueueNumStrategy,deFiBusBrokerConfig);
 
         this.deFiManageExecutor =
             Executors.newFixedThreadPool(brokerConfig.getClientManageThreadPoolNums(), new ThreadFactoryImpl(
@@ -159,6 +159,9 @@ public class DeFiBrokerController extends BrokerController {
         this.messageRedirectManager = new MessageRedirectManager(this);
         this.clientRebalanceResultManager = new ClientRebalanceResultManager(this);
         this.queueListeningMonitor = new QueueListeningMonitor(this);
+        this.mqAccessLockManager = new ConsumeQueueAccessLockManager(this);
+        AdjustQueueNumStrategy adjustQueueNumStrategy = new AdjustQueueNumStrategy(this);
+        this.consumerManager = new DeFiConsumerManager(consumerIdsChangeListener, adjustQueueNumStrategy,this);
         DeFiBusBrokerStartup.setDeFiBrokerController(this);
     }
 
@@ -324,4 +327,7 @@ public class DeFiBrokerController extends BrokerController {
         return clientRebalanceResultManager;
     }
 
+    public ConsumeQueueAccessLockManager getMqAccessLockManager() {
+        return mqAccessLockManager;
+    }
 }
