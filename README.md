@@ -39,6 +39,7 @@ DeFiBus主要包括以下几个组件（模块）：
 * [服务就近：就近进行服务的请求和响应，减少跨区调用](docs/cn/features/4-invoke-service-nearby.md)
 * [应用多活：应用多中心多活](docs/cn/features/5-multi-active.md)
 * [动态扩缩队列 ：自适应应用实例数量，动态调整队列个数](docs/cn/features/6-dynamic-adjust-queue.md)
+* [访问控制表：优化负载均衡时时重复消费的情况](docs/cn/features/7-access-lock.md)
 * [容错机制：故障和错误隔离](docs/cn/features/8-fault-tolerant.md)
 * [服务代理：云原生多语言的代理EventMesh](https://github.com/apache/incubator-eventmesh)
 * 服务治理：服务元数据的管理(待开源)
