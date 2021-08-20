@@ -1,5 +1,5 @@
 ## DeFiBus(Decentralized Financial Message Bus) -- 分布式金融级消息总线
-[![CI status](https://github.com/WeBankFinTech/DeFiBus/actions/workflows/ci.yml/badge.svg)] 
+[![CI status](https://github.com/WeBankFinTech/DeFiBus/actions/workflows/ci.yml/badge.svg)](https://github.com/WeBankFinTech/DeFiBus/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/WeBankFinTech/DeFiBus/badge.svg?branch=master)](https://coveralls.io/github/WeBankFinTech/DeFiBus?branch=master)
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
