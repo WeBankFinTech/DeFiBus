@@ -1,5 +1,6 @@
 ## DeFiBus(Decentralized Financial Message Bus) -- 分布式金融级消息总线
-[![Build Status](https://www.travis-ci.org/WeBankFinTech/DeFiBus.svg?branch=master)](https://www.travis-ci.org/WeBankFinTech/DeFiBus) [![Coverage Status](https://coveralls.io/repos/github/WeBankFinTech/DeFiBus/badge.svg?branch=master)](https://coveralls.io/github/WeBankFinTech/DeFiBus?branch=master)
+[![CI status](https://github.com/WeBankFinTech/DeFiBus/actions/workflows/ci.yml/badge.svg)](https://github.com/WeBankFinTech/DeFiBus/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/WeBankFinTech/DeFiBus/badge.svg?branch=master)](https://coveralls.io/github/WeBankFinTech/DeFiBus?branch=master)
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 **DeFiBus=RPC+MQ，是基于开源消息中间件打造的安全可控的分布式金融级消息总线。DeFiBus不仅提供了RPC同步调用，还提供了MQ的异步事件通知、事件组播和广播等常用服务调用和消息模式，同时增加了应用多中心多活、服务就近、灰度发布等分布式场景下的高可用能力。在对于机器故障的容错能力方面的增强，也让消息总线的服务更加稳定可靠，为业务提供7x24的服务。**
@@ -39,6 +40,7 @@ DeFiBus主要包括以下几个组件（模块）：
 * [服务就近：就近进行服务的请求和响应，减少跨区调用](docs/cn/features/4-invoke-service-nearby.md)
 * [应用多活：应用多中心多活](docs/cn/features/5-multi-active.md)
 * [动态扩缩队列 ：自适应应用实例数量，动态调整队列个数](docs/cn/features/6-dynamic-adjust-queue.md)
+* [访问控制表：优化负载均衡时时重复消费的情况](docs/cn/features/7-access-lock.md)
 * [容错机制：故障和错误隔离](docs/cn/features/8-fault-tolerant.md)
 * [服务代理：云原生多语言的代理EventMesh](https://github.com/apache/incubator-eventmesh)
 * 服务治理：服务元数据的管理(待开源)
