@@ -63,4 +63,6 @@ public class DeFiBusConstant {
 
     public static final String IDC_SEPERATER = "-";
 
+    public static final String RETRY_TIME = "RETRY_TIME";
+
 }
