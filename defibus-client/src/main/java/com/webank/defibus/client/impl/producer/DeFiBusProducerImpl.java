@@ -307,6 +307,7 @@ public class DeFiBusProducerImpl {
         asynCircuitBreakSendCallBack.setProducer(this.deFiBusProducer);
         asynCircuitBreakSendCallBack.setSelectorArg(selectorArgs);
         asynCircuitBreakSendCallBack.setSendCallback(sendCallback);
+        asynCircuitBreakSendCallBack.setPublishTimeout(timeout);
 
         String topic = msg.getTopic();
         boolean hasRouteData = deFiBusProducer.getDefaultMQProducer().getDefaultMQProducerImpl().getmQClientFactory().getTopicRouteTable().containsKey(topic);
@@ -327,7 +328,11 @@ public class DeFiBusProducerImpl {
         private AtomicInteger circuitBreakRetryTimes = new AtomicInteger(0);
         private int queueCount = 0;
 
-        private int publishTimeout = 3000;
+        private long publishTimeout = 3000;
+
+        public void setPublishTimeout(long publishTimeout) {
+            this.publishTimeout = publishTimeout;
+        }
 
         public void setProducer(DeFiBusProducer producer) {
             this.producer = producer;
