@@ -60,6 +60,16 @@ public class DeFiBusClientConfig {
 
     private int minMqNumWhenSendLocal = 1;
 
+    private boolean detectHealthyMessageQueueEnable = true;
+
+    public boolean isDetectHealthyMessageQueueEnable() {
+        return detectHealthyMessageQueueEnable;
+    }
+
+    public void setDetectHealthyMessageQueueEnable(boolean detectHealthyMessageQueueEnable) {
+        this.detectHealthyMessageQueueEnable = detectHealthyMessageQueueEnable;
+    }
+
     public String getProducerGroup() {
         return producerGroup;
     }
