@@ -33,10 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -46,6 +43,7 @@ import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.impl.factory.MQClientInstance;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.client.producer.MessageQueueSelector;
 import org.apache.rocketmq.client.producer.SendCallback;
 import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.common.ServiceState;
@@ -54,7 +52,10 @@ import org.apache.rocketmq.common.message.MessageBatch;
 import org.apache.rocketmq.common.message.MessageClientIDSetter;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.common.protocol.body.ClusterInfo;
+import org.apache.rocketmq.remoting.exception.RemotingConnectException;
 import org.apache.rocketmq.remoting.exception.RemotingException;
+import org.apache.rocketmq.remoting.exception.RemotingSendRequestException;
+import org.apache.rocketmq.remoting.exception.RemotingTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +65,8 @@ public class DeFiBusProducerImpl {
     private DeFiBusProducer deFiBusProducer;
     private HealthyMessageQueueSelector messageQueueSelector;
     private ScheduledExecutorService scheduledExecutorService;
+
+    private ScheduledExecutorService healthyMessageQueueDetector;
     private ExecutorService executorService = null;
     private ConcurrentHashMap<String, Boolean> topicInitMap = new ConcurrentHashMap<String, Boolean>();
     private ClusterInfo clusterInfo;
@@ -84,6 +87,58 @@ public class DeFiBusProducerImpl {
             }
         }, 0, 1000, TimeUnit.MILLISECONDS);
 
+        if (deFiBusClientConfig.isDetectHealthyMessageQueueEnable()) {
+            healthyMessageQueueDetector = Executors.newSingleThreadScheduledExecutor(
+                    r -> {
+                        Thread t = new Thread("HealthyMessageQueueDetectThread");
+                        return t;
+                    }
+            );
+            healthyMessageQueueDetector.scheduleWithFixedDelay(this::checkMessageQueue, 3000, 30000, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private boolean isBrokerReachable(String brokerName) {
+        try {
+            String brokerAddr = deFiBusProducer.getDefaultMQProducer().getDefaultMQProducerImpl().getmQClientFactory().findBrokerAddressInPublish(brokerName);
+            if (brokerAddr == null) {
+                return false;
+            }
+            boolean reachable = deFiBusProducer.getDeFiBusClientInstance().brokerHealth(brokerAddr, 3000);
+            if (!reachable) {
+                LOGGER.warn("broker is not reachable, brokerName:{},  brokerAddr:{},", brokerName, brokerAddr);
+            }
+            return reachable;
+        } catch (Exception e) {
+            LOGGER.warn("isBrokerReachable exception,brokerName:{}", brokerName, e);
+            return false;
+        }
+    }
+
+    public void checkMessageQueue() {
+        try {
+            MessageQueueHealthManager manager = this.messageQueueSelector.getMessageQueueHealthManager();
+            ConcurrentHashMap<MessageQueue, Long> faultMap = manager.getFaultMap();
+
+            Map<String, Boolean> checkedBrokers = new HashMap<>();
+            for (Map.Entry<MessageQueue, Long> entry : faultMap.entrySet()) {
+                String brokerName = entry.getKey().getBrokerName();
+                if (StringUtils.isBlank(brokerName)) {
+                    continue;
+                }
+                if (!checkedBrokers.containsKey(brokerName)) {
+                    boolean reachable = isBrokerReachable(brokerName);
+                    checkedBrokers.put(brokerName, reachable);
+                }
+
+                if (!checkedBrokers.get(brokerName)) {
+                    manager.markQueueFault(entry.getKey());
+                }
+            }
+            LOGGER.info("checkMessageQueue result: {}", checkedBrokers);
+        } catch (Exception e) {
+            LOGGER.warn("checkMessageQueue exception :", e);
+        }
     }
 
     private void cleanExpiredRRRequest() {
