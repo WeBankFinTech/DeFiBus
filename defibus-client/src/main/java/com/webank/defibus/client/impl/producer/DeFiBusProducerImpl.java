@@ -25,6 +25,7 @@ import com.webank.defibus.common.exception.DeFiBusException;
 import com.webank.defibus.common.protocol.DeFiBusResponseCode;
 import com.webank.defibus.common.util.DeFiBusRequestIDUtil;
 import com.webank.defibus.producer.DeFiBusProducer;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -68,8 +69,11 @@ public class DeFiBusProducerImpl {
     private ConcurrentHashMap<String, Boolean> topicInitMap = new ConcurrentHashMap<String, Boolean>();
     private ClusterInfo clusterInfo;
 
+    private long InnerTimeoutMax = 1414;
+    private long InnerTimeoutMin = 100;
+
     public DeFiBusProducerImpl(DeFiBusProducer deFiBusProducer, DeFiBusClientConfig deFiBusClientConfig,
-        DeFiBusClientInstance deFiBusClientInstance) {
+                               DeFiBusClientInstance deFiBusClientInstance) {
         this.deFiBusProducer = deFiBusProducer;
         this.messageQueueSelector = new HealthyMessageQueueSelector(new MessageQueueHealthManager(deFiBusClientConfig.getQueueIsolateTimeMillis()),
                 deFiBusClientConfig.getMinMqNumWhenSendLocal());
@@ -119,8 +123,8 @@ public class DeFiBusProducerImpl {
     }
 
     public void reply(
-        Message replyMsg,
-        final SendCallback sendCallback) throws InterruptedException, RemotingException, MQClientException, MQBrokerException {
+            Message replyMsg,
+            final SendCallback sendCallback) throws InterruptedException, RemotingException, MQClientException, MQBrokerException {
         replyMsg.putUserProperty(DeFiBusConstant.KEY, DeFiBusConstant.REPLY);
         replyMsg.putUserProperty(DeFiBusConstant.PROPERTY_MESSAGE_TTL, String.valueOf(deFiBusProducer.getDefaultMQProducer().getSendMsgTimeout()));
 
@@ -131,6 +135,8 @@ public class DeFiBusProducerImpl {
         if (requestId == null) {
             LOGGER.warn("rr request id is null, can not reply");
         }
+
+        long timeout = calculateInnerPublishTimeout(deFiBusProducer.getDefaultMQProducer().getSendMsgTimeout());
         publish(replyMsg, new SendCallback() {
             @Override
             public void onSuccess(SendResult sendResult) {
@@ -146,16 +152,16 @@ public class DeFiBusProducerImpl {
                     sendCallback.onException(e);
                 }
             }
-        });
+        }, timeout);
     }
 
     public Message request(Message requestMsg,
-        long timeout) throws InterruptedException, RemotingException, MQClientException, MQBrokerException {
+                           long timeout) throws InterruptedException, RemotingException, MQClientException, MQBrokerException {
         return request(requestMsg, null, null, timeout);
     }
 
     public Message request(Message requestMsg, final SendCallback sendCallback, RRCallback rrCallback, long timeout)
-        throws InterruptedException, RemotingException, MQClientException, MQBrokerException {
+            throws InterruptedException, RemotingException, MQClientException, MQBrokerException {
 
         boolean isAsyncRR = (rrCallback != null);
 
@@ -191,6 +197,8 @@ public class DeFiBusProducerImpl {
             }
         }
 
+        long publishTimeout = calculateInnerPublishTimeout(timeout);
+
         ResponseTable.getRrResponseFurtureConcurrentHashMap().put(uniqueRequestId, responseFurture);
         if (isAsyncRR) {
             this.publish(requestMsg, new SendCallback() {
@@ -209,7 +217,7 @@ public class DeFiBusProducerImpl {
                         sendCallback.onException(e);
                     }
                 }
-            }, timeout);
+            }, publishTimeout);
             return null;
 
         } else {
@@ -229,7 +237,7 @@ public class DeFiBusProducerImpl {
                         sendCallback.onException(e);
                     }
                 }
-            }, timeout);
+            }, publishTimeout);
             Message retMessage = responseFurture.waitResponse(timeout);
             ResponseTable.getRrResponseFurtureConcurrentHashMap().remove(uniqueRequestId);
             if (retMessage == null) {
@@ -258,7 +266,7 @@ public class DeFiBusProducerImpl {
     }
 
     public void publish(
-        Collection<Message> msgs) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
+            Collection<Message> msgs) throws MQClientException, RemotingException, MQBrokerException, InterruptedException {
         for (Message msg : msgs) {
             if (msg.getUserProperty(DeFiBusConstant.PROPERTY_MESSAGE_TTL) == null) {
                 msg.putUserProperty(DeFiBusConstant.PROPERTY_MESSAGE_TTL, DeFiBusConstant.DEFAULT_TTL);
@@ -283,12 +291,12 @@ public class DeFiBusProducerImpl {
     }
 
     public void publish(Message msg,
-        SendCallback sendCallback) throws MQClientException, RemotingException, InterruptedException {
+                        SendCallback sendCallback) throws MQClientException, RemotingException, InterruptedException {
         publish(msg, sendCallback, this.deFiBusProducer.getDefaultMQProducer().getSendMsgTimeout());
     }
 
     public void publish(final Message msg, final SendCallback sendCallback,
-        final long timeout) throws MQClientException, RemotingException, InterruptedException {
+                        final long timeout) throws MQClientException, RemotingException, InterruptedException {
         if (msg.getUserProperty(DeFiBusConstant.PROPERTY_MESSAGE_TTL) == null) {
             msg.putUserProperty(DeFiBusConstant.PROPERTY_MESSAGE_TTL, DeFiBusConstant.DEFAULT_TTL);
         }
@@ -299,6 +307,7 @@ public class DeFiBusProducerImpl {
         asynCircuitBreakSendCallBack.setProducer(this.deFiBusProducer);
         asynCircuitBreakSendCallBack.setSelectorArg(selectorArgs);
         asynCircuitBreakSendCallBack.setSendCallback(sendCallback);
+        asynCircuitBreakSendCallBack.setPublishTimeout(timeout);
 
         String topic = msg.getTopic();
         boolean hasRouteData = deFiBusProducer.getDefaultMQProducer().getDefaultMQProducerImpl().getmQClientFactory().getTopicRouteTable().containsKey(topic);
@@ -318,6 +327,12 @@ public class DeFiBusProducerImpl {
         private AtomicInteger sendRetryTimes = new AtomicInteger(0);
         private AtomicInteger circuitBreakRetryTimes = new AtomicInteger(0);
         private int queueCount = 0;
+
+        private long publishTimeout = 3000;
+
+        public void setPublishTimeout(long publishTimeout) {
+            this.publishTimeout = publishTimeout;
+        }
 
         public void setProducer(DeFiBusProducer producer) {
             this.producer = producer;
@@ -347,7 +362,7 @@ public class DeFiBusProducerImpl {
         public void onException(Throwable e) {
             try {
                 MessageQueueHealthManager messageQueueHealthManager
-                    = ((HealthyMessageQueueSelector) messageQueueSelector).getMessageQueueHealthManager();
+                        = ((HealthyMessageQueueSelector) messageQueueSelector).getMessageQueueHealthManager();
                 MessageQueue messageQueue = ((AtomicReference<MessageQueue>) selectorArg).get();
                 if (messageQueue != null) {
                     messageQueueSelector.getMessageQueueHealthManager().markQueueFault(messageQueue);
@@ -360,7 +375,7 @@ public class DeFiBusProducerImpl {
                     //first retry initialize
                     if (queueCount == 0) {
                         List<MessageQueue> messageQueueList = producer.getDefaultMQProducer().getDefaultMQProducerImpl().getTopicPublishInfoTable()
-                            .get(msg.getTopic()).getMessageQueueList();
+                                .get(msg.getTopic()).getMessageQueueList();
                         queueCount = messageQueueList.size();
                         String clusterPrefix = deFiBusProducer.getDeFiBusClientConfig().getClusterPrefix();
                         if (!StringUtils.isEmpty(clusterPrefix)) {
@@ -374,9 +389,10 @@ public class DeFiBusProducerImpl {
 
                     int retryTimes = Math.min(queueCount, deFiBusProducer.getDeFiBusClientConfig().getRetryTimesWhenSendAsyncFailed());
                     if (circuitBreakRetryTimes.get() < retryTimes) {
-                        circuitBreakRetryTimes.incrementAndGet();
-                        LOGGER.warn("fuse:send to [{}] circuit break, retry no.[{}] times, msgKey:[{}]", messageQueue.toString(), circuitBreakRetryTimes.intValue(), msg.getKeys());
-                        producer.getDefaultMQProducer().send(msg, messageQueueSelector, selectorArg, this);
+                        int currentRetryTimes = circuitBreakRetryTimes.incrementAndGet();
+                        LOGGER.warn("fuse:send to [{}] circuit break, retry no.[{}] times, msgKey:[{}]", messageQueue.toString(), currentRetryTimes, msg.getKeys());
+                        msg.putUserProperty(DeFiBusConstant.RETRY_TIME, "#" + currentRetryTimes);
+                        producer.getDefaultMQProducer().send(msg, messageQueueSelector, selectorArg, this, this.publishTimeout);
                         //no exception to client when retry
                         return;
                     } else {
@@ -384,9 +400,11 @@ public class DeFiBusProducerImpl {
                     }
                 } else {
                     int maxRetryTimes = producer.getDeFiBusClientConfig().getRetryTimesWhenSendAsyncFailed();
-                    if (sendRetryTimes.getAndIncrement() < maxRetryTimes) {
-                        LOGGER.info("send message fail, retry {} now, msgKey: {}, cause: {}", sendRetryTimes.get(), msg.getKeys(), e.getMessage());
-                        producer.getDefaultMQProducer().send(msg, messageQueueSelector, selectorArg, this);
+                    if (sendRetryTimes.get() < maxRetryTimes) {
+                        int currentRetryTimes = sendRetryTimes.incrementAndGet();
+                        LOGGER.info("send message fail, retry {} now, msgKey: {}, cause: {}", currentRetryTimes, msg.getKeys(), e.getMessage());
+                        msg.putUserProperty(DeFiBusConstant.RETRY_TIME, "#" + currentRetryTimes);
+                        producer.getDefaultMQProducer().send(msg, messageQueueSelector, selectorArg, this, this.publishTimeout);
                         return;
                     } else {
                         LOGGER.warn("send message fail, after retry {} times, msgKey:[{}]", maxRetryTimes, msg.getKeys());
@@ -423,9 +441,9 @@ public class DeFiBusProducerImpl {
         try {
             MQClientInstance mqClientInstance = this.deFiBusProducer.getDefaultMQProducer().getDefaultMQProducerImpl().getmQClientFactory();
             if (mqClientInstance != null
-                && this.deFiBusProducer.getDefaultMQProducer().getDefaultMQProducerImpl().getServiceState() == ServiceState.RUNNING) {
+                    && this.deFiBusProducer.getDefaultMQProducer().getDefaultMQProducerImpl().getServiceState() == ServiceState.RUNNING) {
                 if (mqClientInstance.getMQClientAPIImpl() != null && mqClientInstance.getMQClientAPIImpl().getNameServerAddressList() != null
-                    && mqClientInstance.getMQClientAPIImpl().getNameServerAddressList().size() == 0) {
+                        && mqClientInstance.getMQClientAPIImpl().getNameServerAddressList().size() == 0) {
                     mqClientInstance.getMQClientAPIImpl().fetchNameServerAddr();
                 }
                 clusterInfo = mqClientInstance.getMQClientAPIImpl().getBrokerClusterInfo(3000);
@@ -453,5 +471,17 @@ public class DeFiBusProducerImpl {
                 LOGGER.info("localBrokers updated:  {} , clusterPrefix :{} ", currentBrokers, clusterPrefix);
             }
         }
+    }
+
+    private long calculateInnerPublishTimeout(long expectTTL) {
+        //特殊值,容易区分
+        long timeout = InnerTimeoutMax;
+        if (expectTTL < InnerTimeoutMax) {
+            timeout = expectTTL / 2;
+        }
+        if (expectTTL < InnerTimeoutMin) {
+            timeout = InnerTimeoutMin;
+        }
+        return timeout;
     }
 }
