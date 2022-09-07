@@ -20,6 +20,7 @@ package com.webank.defibus.client.producer;
 import com.webank.defibus.client.impl.producer.DeFiBusProducerImpl;
 import com.webank.defibus.client.impl.producer.HealthyMessageQueueSelector;
 import com.webank.defibus.client.impl.producer.MessageQueueHealthManager;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -115,12 +116,14 @@ public class HealthyMessageQueueSelectorTest {
         String bizTopic = "XX0-s-00000000-01-0";
         String localBrokerName = "localIdcBroker";
         String otherIdcBrokerName = "otherIdcBroker";
+        String localBrokerName2 = "localIdcBroker2";
 
         Message msg = new Message();
         msg.setTopic(bizTopic);
 
         Set<String> localBrokers = new HashSet<>();
         localBrokers.add(localBrokerName);
+        localBrokers.add(localBrokerName2);
 
         MessageQueueHealthManager manager = new MessageQueueHealthManager(60 * 1000);
         HealthyMessageQueueSelector selector = new HealthyMessageQueueSelector(manager, 1);
@@ -140,6 +143,12 @@ public class HealthyMessageQueueSelectorTest {
             mqs.add(m);
             otherMqs.add(m);
         }
+        for (int i = 0; i < 3; i++) {
+            MessageQueue m = new MessageQueue(bizTopic, localBrokerName2, i);
+            mqs.add(m);
+            localMqs.add(m);
+        }
+
         Collections.sort(mqs);
 
         //case 1:There are mqs that aren't isolated in this IDC, select from this IDC
@@ -148,7 +157,7 @@ public class HealthyMessageQueueSelectorTest {
             MessageQueue selectResult = selector.select(mqs, msg, selectedResultRef);
 
             Assert.assertTrue(selectResult != null
-                && localBrokers.contains(selectResult.getBrokerName()));
+                    && localBrokers.contains(selectResult.getBrokerName()));
             Assert.assertTrue(!selector.getMessageQueueHealthManager().faultMap.containsKey(selectResult));
         }
 
@@ -161,7 +170,7 @@ public class HealthyMessageQueueSelectorTest {
             MessageQueue selectResult = selector.select(mqs, msg, selectedResultRef);
 
             Assert.assertTrue(selectResult != null
-                && !localBrokers.contains(selectResult.getBrokerName()));
+                    && !localBrokers.contains(selectResult.getBrokerName()));
             Assert.assertTrue(!selector.getMessageQueueHealthManager().faultMap.containsKey(selectResult));
         }
 
@@ -174,7 +183,7 @@ public class HealthyMessageQueueSelectorTest {
             MessageQueue selectResult = selector.select(mqs, msg, selectedResultRef);
 
             Assert.assertTrue(selectResult != null
-                && (selectResult.getBrokerName().equals(localBrokerName) || selectResult.getBrokerName().equals(otherIdcBrokerName)));
+                    && (selectResult.getBrokerName().equals(localBrokerName2) || selectResult.getBrokerName().equals(localBrokerName) || selectResult.getBrokerName().equals(otherIdcBrokerName)));
             Assert.assertTrue(selector.getMessageQueueHealthManager().faultMap.containsKey(selectResult));
         }
     }
@@ -225,8 +234,8 @@ public class HealthyMessageQueueSelectorTest {
             MessageQueue selectResult = selector.select(mqs, msg, selectedResultRef);
 
             Assert.assertTrue(selectResult != null
-                && localBrokers.contains(selectResult.getBrokerName())
-                && !selectResult.getBrokerName().equals(lastSelectedMq.getBrokerName()));
+                    && localBrokers.contains(selectResult.getBrokerName())
+                    && !selectResult.getBrokerName().equals(lastSelectedMq.getBrokerName()));
             Assert.assertTrue(!selector.getMessageQueueHealthManager().faultMap.containsKey(selectResult));
         }
 
@@ -240,8 +249,8 @@ public class HealthyMessageQueueSelectorTest {
             MessageQueue selectResult = selector.select(mqs, msg, selectedResultRef);
 
             Assert.assertTrue(selectResult != null
-                && !localBrokers.contains(selectResult.getBrokerName())
-                && !selectResult.getBrokerName().equals(lastSelectedMq.getBrokerName()));
+                    && !localBrokers.contains(selectResult.getBrokerName())
+                    && !selectResult.getBrokerName().equals(lastSelectedMq.getBrokerName()));
             Assert.assertTrue(!selector.getMessageQueueHealthManager().faultMap.containsKey(selectResult));
         }
 
@@ -255,7 +264,7 @@ public class HealthyMessageQueueSelectorTest {
             MessageQueue selectResult = selector.select(mqs, msg, selectedResultRef);
 
             Assert.assertTrue(selectResult != null
-                && !selectResult.getBrokerName().equals(lastSelectedMq.getBrokerName()));
+                    && !selectResult.getBrokerName().equals(lastSelectedMq.getBrokerName()));
             Assert.assertTrue(selector.getMessageQueueHealthManager().faultMap.containsKey(selectResult));
         }
     }

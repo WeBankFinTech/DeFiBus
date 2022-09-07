@@ -59,4 +59,8 @@ public class MessageQueueHealthManager {
     public boolean isQueueHealthy(MessageQueue mq) {
         return !isQueueFault(mq);
     }
+
+    public ConcurrentHashMap<MessageQueue, Long> getFaultMap() {
+        return faultMap;
+    }
 }

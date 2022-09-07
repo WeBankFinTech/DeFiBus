@@ -33,9 +33,16 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.rocketmq.client.ClientConfig;
 import org.apache.rocketmq.client.impl.ClientRemotingProcessor;
 import org.apache.rocketmq.client.impl.factory.MQClientInstance;
+import org.apache.rocketmq.common.protocol.RequestCode;
+import org.apache.rocketmq.common.protocol.ResponseCode;
 import org.apache.rocketmq.common.protocol.route.BrokerData;
 import org.apache.rocketmq.common.protocol.route.TopicRouteData;
 import org.apache.rocketmq.remoting.RPCHook;
+import org.apache.rocketmq.remoting.RemotingClient;
+import org.apache.rocketmq.remoting.exception.RemotingConnectException;
+import org.apache.rocketmq.remoting.exception.RemotingSendRequestException;
+import org.apache.rocketmq.remoting.exception.RemotingTimeoutException;
+import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -181,5 +188,15 @@ public class DeFiBusClientInstance extends MQClientInstance {
             }
         }
         return null;
+    }
+
+    public boolean brokerHealth(String brokerAddr, long timeoutMills) throws RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException, InterruptedException {
+        RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.GET_BROKER_CONFIG, null);
+        RemotingCommand response = this.deFiClientAPI.getRemotingClient().invokeSync(brokerAddr, request, timeoutMills);
+        assert response != null;
+        if(response.getCode() == ResponseCode.SUCCESS) {
+            return true;
+        }
+        return  false;
     }
 }
