@@ -69,7 +69,7 @@ public class DeFiBusPullMessageService extends PullMessageService {
 
             long rt = System.currentTimeMillis() - beginPullRequestTime;
             if (rt >= brokerHealthyManager.getIsolateThreshold()) {
-                brokerHealthyManager.isolateBroker(pullRequest.getMessageQueue().getBrokerName());
+                brokerHealthyManager.isolateBroker(pullRequest.getMessageQueue().getBrokerName(), rt);
             }
         } else {
             log.warn("No matched consumer for the PullRequest {}, drop it", pullRequest);
@@ -154,10 +154,10 @@ public class DeFiBusPullMessageService extends PullMessageService {
             }
         }
 
-        public void isolateBroker(String brokerName) {
+        public void isolateBroker(String brokerName, long rt) {
             isolatedBroker.put(brokerName, System.currentTimeMillis());
             if (isolatedBroker.containsKey(brokerName)) {
-                log.info("isolate broker for slow pull message success, {}", brokerName);
+                log.info("isolate broker for slow pull message success, {}, cost:{} ms", brokerName, rt);
             }
         }
 
