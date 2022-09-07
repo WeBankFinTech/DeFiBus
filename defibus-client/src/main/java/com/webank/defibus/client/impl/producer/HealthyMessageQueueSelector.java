@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.client.producer.MessageQueueSelector;
@@ -39,6 +40,7 @@ public class HealthyMessageQueueSelector implements MessageQueueSelector {
     private final ConcurrentHashMap<String, AtomicInteger> topicSendIndex = new ConcurrentHashMap<>();
     private final MessageQueueHealthManager messageQueueHealthManager;
     private int minMqCountWhenSendLocal = 1;
+    private static int THRESHOLD_FOR_PUB_GLOBAL = 1;
     private Map<String, Boolean> sendNearbyMapping = new HashMap<>();
     private Set<String> localBrokers = new HashSet<String>();
 
@@ -56,13 +58,30 @@ public class HealthyMessageQueueSelector implements MessageQueueSelector {
             return null;
         }
 
-        boolean pub2local = MapUtils.getBoolean(sendNearbyMapping, msg.getTopic(), Boolean.TRUE);
+        Boolean pub2local = MapUtils.getBoolean(sendNearbyMapping, msg.getTopic());
+        List<MessageQueue> localMQs = new ArrayList<>();
+        List<MessageQueue> remoteMqs = new ArrayList<>();
+        HashMap<String, Integer> localBrokerMQCount = separateLocalAndRemoteMQs(mqs, localBrokers, localMQs, remoteMqs);
+        //未配置是否就近
+        if (pub2local == null) {
+            pub2local = true;
+            //本IDC只有一个broker存在该topic，转为全局发送
+            if (localBrokerMQCount.size() <= 1) {
+                pub2local = false;
+            } else {
+                //本IDC的broker只有一个q,转为全局发送(Q动态调整时，最终所有broker的Q数目相同)
+                for (String brokerMQNum : localBrokerMQCount.keySet()) {
+                    if (localBrokerMQCount.get(brokerMQNum) <= THRESHOLD_FOR_PUB_GLOBAL) {
+                        pub2local = false;
+                        break;
+                    }
+                }
+            }
+        }
         MessageQueue lastOne = ((AtomicReference<MessageQueue>) selectedResultRef).get();
 
         if (pub2local) {
-            List<MessageQueue> localMQs = new ArrayList<>();
-            List<MessageQueue> remoteMqs = new ArrayList<>();
-            HashMap<String, Integer> localBrokerMQCount = separateLocalAndRemoteMQs(mqs, localBrokers, localMQs, remoteMqs);
+
 
             for (String brokerName : localBrokerMQCount.keySet()) {
                 //if MQ num less than threshold, send msg to all broker
@@ -133,7 +152,7 @@ public class HealthyMessageQueueSelector implements MessageQueueSelector {
     }
 
     private MessageQueue selectMessageQueue(List<MessageQueue> mqs, MessageQueue lastOneSelected,
-        Message msg) {
+                                            Message msg) {
         boolean isRetry = (lastOneSelected != null);
         List<MessageQueue> candidateMqs = mqs;
         if (isRetry) {
@@ -167,7 +186,7 @@ public class HealthyMessageQueueSelector implements MessageQueueSelector {
     }
 
     private HashMap<String, Integer> separateLocalAndRemoteMQs(List<MessageQueue> mqs, Set<String> localBrokers,
-        List<MessageQueue> localMQs, List<MessageQueue> remoteMQs) {
+                                                               List<MessageQueue> localMQs, List<MessageQueue> remoteMQs) {
         if (localMQs == null)
             localMQs = new ArrayList<>();
         if (remoteMQs == null)
@@ -180,7 +199,7 @@ public class HealthyMessageQueueSelector implements MessageQueueSelector {
                 if (count == null) {
                     count = 0;
                 }
-                brokerMQCount.put(mq.getBrokerName(), count+1);
+                brokerMQCount.put(mq.getBrokerName(), count + 1);
             } else {
                 remoteMQs.add(mq);
             }
