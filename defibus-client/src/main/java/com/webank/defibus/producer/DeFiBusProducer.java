@@ -200,4 +200,8 @@ public class DeFiBusProducer {
     public void updateSendNearbyMapping(Map<String, Boolean> newMapping) {
         this.deFiBusProducerImpl.updateSendNearbyMapping(newMapping);
     }
+
+    public DeFiBusClientInstance getDeFiBusClientInstance() {
+        return deFiBusClientInstance;
+    }
 }
