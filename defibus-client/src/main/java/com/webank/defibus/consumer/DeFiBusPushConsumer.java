@@ -155,6 +155,11 @@ public class DeFiBusPushConsumer {
         LOG.info("add subscription [{}] to consumer", topic);
     }
 
+    public void subscribe(String topic, String tag) throws MQClientException {
+        this.defaultMQPushConsumer.subscribe(topic, tag);
+        LOG.info("add subscription [{}] to consumer,tag = {}", topic, tag);
+    }
+
     public void unsubscribe(String topic) {
         unsubscribe(topic, true);
     }
