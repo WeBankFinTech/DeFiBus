@@ -169,6 +169,7 @@ public class DeFiBusPushConsumer {
             ProcessQueue pq = entry.getValue();
             if (messageQueue.getTopic().equals(topic)) {
                 pq.setDropped(true);
+                this.getDefaultMQPushConsumer().getDefaultMQPushConsumerImpl().getOffsetStore().persist(messageQueue);
             }
         }
         this.defaultMQPushConsumer.unsubscribe(topic);
